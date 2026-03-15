@@ -19,8 +19,8 @@ export async function runCommand(options: RunOptions): Promise<void> {
   }
 
   if (options.agent) {
-    // Agent mode will be implemented in Task 15
-    console.log(chalk.yellow('\n  Agent mode not yet implemented. Use standalone mode for now.\n'));
+    const { launchAgent } = await import('./run-agent.js');
+    await launchAgent(cwd, { safe: options.safe });
     return;
   }
 
