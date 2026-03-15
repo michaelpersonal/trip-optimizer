@@ -16,6 +16,11 @@ const messages = {
   'init.model_base_url': { en: 'API base URL (e.g., https://api.moonshot.cn/v1):', zh: 'API 地址（如 https://api.moonshot.cn/v1）：' },
   'init.model_api_key': { en: 'API key for this model:', zh: '该模型的 API 密钥：' },
   'init.model_saved': { en: 'Custom model configured.', zh: '自定义模型已配置。' },
+  'init.model_removed': { en: 'Custom model removed. Using default provider.', zh: '自定义模型已移除，使用默认提供者。' },
+  'init.model_keep_or_change': { en: 'Custom model settings:', zh: '自定义模型设置：' },
+  'init.model_keep': { en: 'Keep current settings', zh: '保持当前设置' },
+  'init.model_edit': { en: 'Edit model / API key / URL', zh: '编辑模型 / API 密钥 / 地址' },
+  'init.model_remove': { en: 'Remove custom model (use default)', zh: '移除自定义模型（使用默认）' },
   'init.model_note': { en: 'Note: Custom models only work in standalone mode (trip-optimizer run --standalone).', zh: '注意：自定义模型仅在独立模式下运行（trip-optimizer run --standalone）。' },
 
   // Profile setup

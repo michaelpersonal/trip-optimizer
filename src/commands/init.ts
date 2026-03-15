@@ -258,7 +258,48 @@ export async function initCommand(name: string): Promise<void> {
   }
 
   // === Step 2: Model override (optional) ===
-  if (!config.model_override) {
+  if (config.model_override) {
+    const mo = config.model_override;
+    const maskedKey = mo.api_key.length > 8
+      ? mo.api_key.slice(0, 4) + '...' + mo.api_key.slice(-4)
+      : '****';
+    console.log(chalk.cyan(`  Custom model: ${mo.model}`));
+    console.log(chalk.cyan(`  Base URL:     ${mo.base_url}`));
+    console.log(chalk.cyan(`  API key:      ${maskedKey}\n`));
+
+    const modelAction = await select({
+      message: t('init.model_keep_or_change'),
+      choices: [
+        { value: 'keep', name: t('init.model_keep') },
+        { value: 'edit', name: t('init.model_edit') },
+        { value: 'remove', name: t('init.model_remove') },
+      ],
+    });
+
+    if (modelAction === 'edit') {
+      const model = await input({
+        message: t('init.model_name'),
+        default: mo.model,
+      });
+      const baseUrl = await input({
+        message: t('init.model_base_url'),
+        default: mo.base_url,
+        validate: (v) => v.startsWith('http') || 'Must be a URL',
+      });
+      const apiKey = await input({
+        message: t('init.model_api_key'),
+        default: mo.api_key,
+        validate: (v) => v.length > 0 || 'Required',
+      });
+      config.model_override = { provider_type: 'openai-compatible', model, base_url: baseUrl, api_key: apiKey };
+      saveConfig(config);
+      console.log(chalk.green(`  ${t('init.model_saved')}\n`));
+    } else if (modelAction === 'remove') {
+      delete config.model_override;
+      saveConfig(config);
+      console.log(chalk.green(`  ${t('init.model_removed')}\n`));
+    }
+  } else {
     const wantOverride = await select({
       message: t('init.model_override'),
       choices: [
@@ -280,19 +321,11 @@ export async function initCommand(name: string): Promise<void> {
         message: t('init.model_api_key'),
         validate: (v) => v.length > 0 || 'Required',
       });
-
-      config.model_override = {
-        provider_type: 'openai-compatible',
-        model,
-        base_url: baseUrl,
-        api_key: apiKey,
-      };
+      config.model_override = { provider_type: 'openai-compatible', model, base_url: baseUrl, api_key: apiKey };
       saveConfig(config);
       console.log(chalk.green(`\n  ${t('init.model_saved')}`));
       console.log(chalk.yellow(`  ${t('init.model_note')}\n`));
     }
-  } else {
-    console.log(chalk.cyan(`  Custom model: ${config.model_override.model} (${config.model_override.base_url})\n`));
   }
 
   // === Step 3: Profile (first-time only) ===
