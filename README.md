@@ -2,7 +2,7 @@
 
 If you love travel like I do, you know the pain: before every trip you're deep in Google, TripAdvisor, 小红书, 携程, reading strangers' tips, comparing restaurants, checking transit schedules. You easily spend days, sometimes weeks, on research. Travel is supposed to be leisure and relaxation, not a second job.
 
-**trip-optimizer** autonomously optimizes travel plans using the autoresearch pattern — an AI-powered CLI that researches, scores, and iteratively improves your itinerary.
+**trip-optimizer** autonomously optimizes travel plans using Andrej Kaparthy's autoresearch pattern — an AI-powered CLI that researches, scores, and iteratively improves your itinerary.
 
 支持 **English** 和 **中文（简体中文）** -- 在初始化时选择语言，整个体验随之适配：提示语、生成的行程、研究搜索、评分系统全部使用您选择的语言。
 
