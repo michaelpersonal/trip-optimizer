@@ -7,6 +7,8 @@ import { scoreCommand } from './commands/score.js';
 import { researchCommand } from './commands/research.js';
 import { runCommand } from './commands/run.js';
 import { statusCommand } from './commands/status.js';
+import { debriefCommand } from './commands/debrief.js';
+import { historyCommand } from './commands/history.js';
 
 const program = new Command();
 
@@ -52,5 +54,15 @@ program
   .command('status')
   .description('Show current score and optimization progress')
   .action(statusCommand);
+
+program
+  .command('debrief')
+  .description('Post-trip debrief — rate experiences and build memory')
+  .action(debriefCommand);
+
+program
+  .command('history')
+  .description('View past trip debriefs and learned preferences')
+  .action(historyCommand);
 
 program.parse();
