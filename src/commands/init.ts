@@ -66,6 +66,21 @@ export async function initCommand(name: string): Promise<void> {
     saveProfile(profile);
   } else if (profile.trips_completed > 0) {
     console.log(chalk.cyan(`  Welcome back! ${profile.trips_completed} past trips on record.\n`));
+
+    // Show learned preferences for returning users
+    if (profile.learned_vibes.length > 0) {
+      console.log(chalk.dim(`  Learned vibes: ${profile.learned_vibes.join(', ')}`));
+    }
+    if (profile.anti_patterns_learned.length > 0) {
+      console.log(chalk.dim(`  Learned anti-patterns: ${profile.anti_patterns_learned.join(', ')}`));
+    }
+    if (Object.keys(profile.source_trust).length > 0) {
+      const sources = Object.entries(profile.source_trust)
+        .map(([k, v]) => `${k}: ${(v * 100).toFixed(0)}%`)
+        .join(', ');
+      console.log(chalk.dim(`  Source trust: ${sources}`));
+    }
+    console.log();
   }
 
   // Trip-specific prompts
@@ -104,9 +119,13 @@ export async function initCommand(name: string): Promise<void> {
     ],
   });
 
+  const learnedAntiDefaults = profile.anti_patterns_learned.length > 0
+    ? profile.anti_patterns_learned.join(', ')
+    : '';
+
   const antiPatternsRaw = await input({
     message: 'Anything to avoid? (comma-separated, or press Enter to skip):',
-    default: '',
+    default: learnedAntiDefaults,
   });
 
   const antiPatterns = antiPatternsRaw
