@@ -1,0 +1,40 @@
+{
+  "name": "trip-optimizer",
+  "version": "0.1.0",
+  "description": "Autonomously optimize travel plans using the autoresearch pattern",
+  "type": "module",
+  "bin": {
+    "trip-optimizer": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "license": "MIT",
+  "keywords": [
+    "travel",
+    "optimizer",
+    "ai",
+    "cli",
+    "autoresearch"
+  ],
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "inquirer": "^13.3.0",
+    "js-yaml": "^4.1.1",
+    "ora": "^9.3.0",
+    "simple-git": "^3.33.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.5.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}
