@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
 import { configCommand } from './commands/config.js';
 import { profileCommand } from './commands/profile.js';
+import { scoreCommand } from './commands/score.js';
 
 const program = new Command();
 
@@ -26,5 +27,10 @@ program
   .command('profile')
   .description('View travel profile and preferences')
   .action(() => profileCommand());
+
+program
+  .command('score')
+  .description('Run a one-off absolute score of the current plan')
+  .action(scoreCommand);
 
 program.parse();
