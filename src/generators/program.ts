@@ -1,10 +1,32 @@
 import type { TripConstraints } from '../data/schemas.js';
 import type { Config } from '../data/config.js';
+import { getLanguage } from '../i18n.js';
 
 export function generateProgram(constraints: TripConstraints, config: Config): string {
   const hasSearchApi = !!config.search_api?.api_key;
+  const isZh = getLanguage() === 'zh';
 
-  const researchSection = `### Research Sources (in priority order)
+  const researchSources = isZh
+    ? `### 研究来源（按优先级排序）
+
+1. **浏览器研究**（如果 agent-browser 技能可用）：
+   - 使用 \`agent-browser\` 技能访问大众点评、小红书、马蜂窝、携程、Google Maps
+   - 提取评分、评论数量、当季菜单、本地人推荐
+   - 这是最真实的实时数据来源
+   - 优先搜索中文平台（小红书、大众点评、马蜂窝），因为本地人的推荐更可靠
+
+${hasSearchApi ? `2. **网络搜索 API**（已配置）：
+   - 搜索 "[城市] 本地人推荐 隐藏美食"
+   - 搜索 "[城市] 避雷 踩坑 游客陷阱"
+   - 搜索 "[城市] 小众景点 当地人才知道"
+   - 搜索 "[城市] 当季特色 时令美食"
+   - 同时搜索中英文关键词以获取更全面的结果
+
+3. **LLM 知识**（备选）：` : `2. **LLM 知识**（主要来源）：
+`}   - 使用训练数据获取活动和餐厅推荐
+   - 标记来源为 "llm_knowledge" 以便评分器降低权重
+   - 对知名目的地效果好，对冷门地点效果较差`
+    : `### Research Sources (in priority order)
 
 1. **Browser research** (if agent-browser skill is available):
    - Invoke the \`agent-browser\` skill to visit Google Maps, Dianping, Xiaohongshu, TripAdvisor
@@ -22,6 +44,28 @@ ${hasSearchApi ? `2. **Web search API** (configured):
    - Flag entries as source: "llm_knowledge" so scorer weights them lower
    - Good for major destinations, weaker for obscure ones`;
 
+  const researchQueries = isZh
+    ? `### 研究搜索关键词
+- "[城市] 本地人推荐 小众景点"
+- "[城市] 避雷指南 游客陷阱"
+- "[城市] 必吃美食 苍蝇馆子 本地人排队"
+- "[城市] 值得逛的街区 City Walk"
+- "[城市] [季节] 当季特色 时令推荐"
+- "[城市] 深度游 不在攻略上的体验"
+- "[City] hidden gems locals only"（英文补充搜索）
+- "[City] authentic local food NOT tourist"（英文补充搜索）`
+    : `### Research Query Patterns
+- "[City] hidden gems locals only"
+- "[City] overrated tourist traps to skip"
+- "[City] best street food locals recommend"
+- "[City] atmospheric neighborhoods to walk"
+- "[City] what to do in [season] seasonal"
+- "[City] authentic experiences not on TripAdvisor"`;
+
+  const outputLanguage = isZh
+    ? `\n## 输出语言\n\n所有输出（plan.md、activities_db.json 中的描述、commit messages）都必须使用简体中文。\n`
+    : '';
+
   return `# trip-optimizer Agent Instructions
 
 ## Setup
@@ -35,19 +79,13 @@ ${hasSearchApi ? `2. **Web search API** (configured):
 
 Before mutating anything, build knowledge. For each city in the plan:
 
-${researchSection}
+${researchSources}
 
-### Research Query Patterns
-- "[City] hidden gems locals only"
-- "[City] overrated tourist traps to skip"
-- "[City] best street food locals recommend"
-- "[City] atmospheric neighborhoods to walk"
-- "[City] what to do in [season] seasonal"
-- "[City] authentic experiences not on TripAdvisor"
+${researchQueries}
 
 After researching, add all findings to \`activities_db.json\` with scores and sources.
 Git commit the updated database.
-
+${outputLanguage}
 ## Phase 2: Optimization Loop
 
 \`\`\`
