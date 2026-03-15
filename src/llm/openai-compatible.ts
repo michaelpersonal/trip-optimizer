@@ -20,18 +20,18 @@ interface ChatResponse {
   choices: ChatChoice[];
 }
 
-// Reasoning models (like Kimi K2.5, DeepSeek-R1) use tokens for chain-of-thought.
-// They need much higher max_tokens to leave room for the actual answer after reasoning.
-const REASONING_MODEL_PATTERNS = [
+// Models that support `thinking: { type: "disabled" }` to skip chain-of-thought.
+// Only includes models whose API actually supports this parameter.
+// OpenAI o1/o3 do NOT support this — they use `reasoning_effort` instead
+// and don't expose reasoning_content separately.
+const THINKING_DISABLE_PATTERNS = [
   /kimi-k2/i,
   /deepseek-r1/i,
   /deepseek-reasoner/i,
-  /o1/i,
-  /o3/i,
 ];
 
-function isReasoningModel(model: string): boolean {
-  return REASONING_MODEL_PATTERNS.some(p => p.test(model));
+function supportsThinkingDisable(model: string): boolean {
+  return THINKING_DISABLE_PATTERNS.some(p => p.test(model));
 }
 
 export class OpenAICompatibleProvider implements LLMProvider {
@@ -44,7 +44,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
     this.apiKey = options.apiKey;
     this.model = options.model;
-    this.reasoning = isReasoningModel(this.model);
+    this.reasoning = supportsThinkingDisable(this.model);
   }
 
   async complete(prompt: string, maxTokens: number): Promise<string> {
