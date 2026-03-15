@@ -44,7 +44,7 @@ function renderDashboard(): void {
 
   // Current score with progress bar
   const lastBest = getLastBestScore(resultsPath);
-  const score = lastBest?.score ?? 0;
+  const score = isNaN(lastBest?.score ?? 0) ? 0 : (lastBest?.score ?? 0);
   console.log(`  Score: ${progressBar(score, 100)} ${chalk.bold(score.toFixed(2))}/100`);
 
   // Dimension scores from score.json
@@ -88,8 +88,11 @@ function renderDashboard(): void {
   console.log(chalk.bold('\n  Recent Mutations:'));
   for (const r of last5) {
     const icon = r.status === 'keep' ? chalk.green('\u2713') : chalk.red('\u2717');
-    const delta = r.delta >= 0 ? chalk.green(`+${r.delta.toFixed(2)}`) : chalk.red(r.delta.toFixed(2));
-    console.log(`    ${icon} #${String(r.iteration).padStart(3)} ${r.mutation_type.padEnd(10)} ${r.description.substring(0, 45).padEnd(45)} ${delta}`);
+    const d = isNaN(r.delta) ? 0 : r.delta;
+    const delta = d >= 0 ? chalk.green(`+${d.toFixed(2)}`) : chalk.red(d.toFixed(2));
+    const mtype = (r.mutation_type || 'unknown').padEnd(10);
+    const desc = (r.description || '').substring(0, 45).padEnd(45);
+    console.log(`    ${icon} #${String(r.iteration || 0).padStart(3)} ${mtype} ${desc} ${delta}`);
   }
 
   // Stats

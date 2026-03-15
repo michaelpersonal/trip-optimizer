@@ -28,13 +28,13 @@ export function readResults(resultsPath: string): IterationLog[] {
   return lines.slice(1).map(line => {
     const parts = line.split('\t');
     return {
-      iteration: parseInt(parts[0], 10),
-      commit: parts[1],
-      score_before: parseFloat(parts[2]),
-      score_after: parseFloat(parts[3]),
-      delta: parseFloat(parts[4]),
-      status: parts[5] as 'keep' | 'discard',
-      mutation_type: parts[6] as any,
+      iteration: parseInt(parts[0], 10) || 0,
+      commit: parts[1] || '',
+      score_before: parseFloat(parts[2]) || 0,
+      score_after: parseFloat(parts[3]) || 0,
+      delta: parseFloat(parts[4]) || 0,
+      status: (parts[5] as 'keep' | 'discard') || 'discard',
+      mutation_type: (parts[6] as any) || 'unknown',
       description: parts[7] || '',
     };
   });

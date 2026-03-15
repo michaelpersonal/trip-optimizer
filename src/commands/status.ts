@@ -44,8 +44,11 @@ export function statusCommand(): void {
   console.log(chalk.bold('\n  Last 5 mutations:'));
   for (const r of last5) {
     const icon = r.status === 'keep' ? chalk.green('\u2713') : chalk.red('\u2717');
-    const delta = r.delta >= 0 ? `+${r.delta.toFixed(2)}` : r.delta.toFixed(2);
-    console.log(`    ${icon} ${r.mutation_type.padEnd(10)} ${r.description.substring(0, 50)}  ${delta}`);
+    const d = isNaN(r.delta) ? 0 : r.delta;
+    const delta = d >= 0 ? `+${d.toFixed(2)}` : d.toFixed(2);
+    const mtype = (r.mutation_type || 'unknown').padEnd(10);
+    const desc = (r.description || '').substring(0, 50);
+    console.log(`    ${icon} ${mtype} ${desc}  ${delta}`);
   }
 
   // Research coverage
