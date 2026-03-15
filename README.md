@@ -2,7 +2,7 @@
 
 Autonomously optimize travel plans using the autoresearch pattern -- an AI-powered CLI that researches, scores, and iteratively improves your itinerary.
 
-Supports **English** and **中文（简体中文）** -- choose your language during setup and the entire experience adapts: prompts, generated plans, research queries, and scoring all work in your language.
+支持 **English** 和 **中文（简体中文）** -- 在初始化时选择语言，整个体验随之适配：提示语、生成的行程、研究搜索、评分系统全部使用您选择的语言。
 
 ## Install
 
@@ -56,15 +56,15 @@ Scoring uses a **3-pass pipeline**. First, the plan is evaluated across seven we
 
 The system builds **persistent memory** across trips. After each trip, a debrief captures what worked and what didn't. These learnings are stored in `learned.json` and feed back into scoring rubrics and research priorities for future trips, so the optimizer gets smarter over time.
 
-### Language & Localization
+### 语言与本地化
 
-The first question during `init` is language selection. When **中文** is selected:
+`init` 的第一个问题是语言选择。选择 **中文** 后：
 
-- All CLI prompts and messages display in Chinese
-- Generated itineraries, rubrics, and plans are written in 简体中文
-- Research prioritizes Chinese platforms (小红书、大众点评、马蜂窝、携程) over English-language sources
-- Search queries use Chinese keywords (本地人推荐、避雷指南、苍蝇馆子) alongside English supplementary searches
-- The PDF output renders Chinese text correctly
+- 所有命令行提示和消息以中文显示
+- 生成的行程、评分标准和计划均以简体中文撰写
+- 研究优先使用中文平台（小红书、大众点评、马蜂窝、携程），而非英文来源
+- 搜索关键词使用中文（本地人推荐、避雷指南、苍蝇馆子），同时辅以英文补充搜索
+- PDF 输出正确渲染中文内容
 
 ### Custom Model Support
 
