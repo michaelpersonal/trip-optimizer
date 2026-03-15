@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
+import { configCommand } from './commands/config.js';
+import { profileCommand } from './commands/profile.js';
 
 const program = new Command();
 
@@ -13,5 +15,16 @@ program
   .command('init <name>')
   .description('Create a new trip project')
   .action(initCommand);
+
+program
+  .command('config')
+  .description('Manage API keys and provider settings')
+  .argument('[args...]', 'config subcommand and arguments')
+  .action((args: string[]) => configCommand(args));
+
+program
+  .command('profile')
+  .description('View travel profile and preferences')
+  .action(() => profileCommand());
 
 program.parse();
