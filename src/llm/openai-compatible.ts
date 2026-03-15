@@ -50,9 +50,18 @@ export class OpenAICompatibleProvider implements LLMProvider {
   async complete(prompt: string, maxTokens: number): Promise<string> {
     const url = `${this.baseUrl}/chat/completions`;
 
-    // Reasoning models need 4-8x more tokens because reasoning_content
-    // consumes from the same budget before the actual content is generated
-    const effectiveMaxTokens = this.reasoning ? maxTokens * 6 : maxTokens;
+    // For reasoning models, disable thinking to get direct answers.
+    // This is faster, cheaper, and avoids exhausting token budgets on CoT.
+    const body: Record<string, unknown> = {
+      model: this.model,
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+    };
+
+    if (this.reasoning) {
+      // Kimi K2.5 / DeepSeek-R1 support disabling reasoning via thinking param
+      body.thinking = { type: 'disabled' };
+    }
 
     const response = await fetch(url, {
       method: 'POST',
@@ -60,11 +69,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.apiKey}`,
       },
-      body: JSON.stringify({
-        model: this.model,
-        max_tokens: effectiveMaxTokens,
-        messages: [{ role: 'user', content: prompt }],
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
