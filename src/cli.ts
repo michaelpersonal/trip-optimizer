@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { initCommand } from './commands/init.js';
 
 const program = new Command();
 
@@ -8,6 +9,9 @@ program
   .description('Autonomously optimize travel plans using the autoresearch pattern')
   .version('0.1.0');
 
-// Commands will be registered here as they are built
+program
+  .command('init <name>')
+  .description('Create a new trip project')
+  .action(initCommand);
 
 program.parse();
