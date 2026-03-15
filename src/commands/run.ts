@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import chalk from 'chalk';
 import { loadConfig } from '../data/config.js';
-import { AnthropicProvider } from '../llm/anthropic.js';
+import { createProvider } from '../llm/factory.js';
 import { runOptimizationLoop } from '../optimizer/loop.js';
 
 interface RunOptions {
@@ -25,12 +25,7 @@ export async function runCommand(options: RunOptions): Promise<void> {
   }
 
   const config = loadConfig();
-  if (!config.api_key) {
-    console.log(chalk.red('\n  No API key configured. Run: trip-optimizer config set api_key <key>\n'));
-    process.exit(1);
-  }
-
-  const provider = new AnthropicProvider(config.api_key);
+  const provider = createProvider(config);
 
   console.log(chalk.bold('\n  trip-optimizer: standalone mode\n'));
 

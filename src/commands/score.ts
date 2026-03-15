@@ -3,7 +3,7 @@ import path from 'path';
 import chalk from 'chalk';
 import yaml from 'js-yaml';
 import { loadConfig } from '../data/config.js';
-import { AnthropicProvider } from '../llm/anthropic.js';
+import { createProvider } from '../llm/factory.js';
 import { Scorer } from '../scoring/scorer.js';
 import type { Rubrics, TripConstraints, ActivitiesDB } from '../data/schemas.js';
 
@@ -18,10 +18,6 @@ export async function scoreCommand(): Promise<void> {
   }
 
   const config = loadConfig();
-  if (!config.api_key) {
-    console.log(chalk.red('\n  No API key configured. Run: trip-optimizer config set api_key <key>\n'));
-    process.exit(1);
-  }
 
   // Load trip files
   const constraints = yaml.load(fs.readFileSync(constraintsPath, 'utf-8')) as TripConstraints;
@@ -36,7 +32,7 @@ export async function scoreCommand(): Promise<void> {
 
   console.log(chalk.bold(`\n  Scoring ${constraints.trip?.name || 'trip'} (absolute mode)...\n`));
 
-  const provider = new AnthropicProvider(config.api_key);
+  const provider = createProvider(config);
   const scorer = new Scorer(provider);
   const result = await scorer.scoreAbsolute(planContent, activitiesDb, constraints, rubrics);
 

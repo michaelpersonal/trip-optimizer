@@ -6,7 +6,7 @@ import path from 'path';
 import { loadConfig } from '../data/config.js';
 import { loadProfile, saveProfile } from '../data/profile.js';
 import { getTripHistoryPath, getLearnedPath, getGlobalDir } from '../data/paths.js';
-import { AnthropicProvider } from '../llm/anthropic.js';
+import { createProvider } from '../llm/factory.js';
 import type { TripDebrief } from '../memory/debrief-processor.js';
 import { processDebrief } from '../memory/debrief-processor.js';
 import { generateLearnedSignals } from '../memory/learned-generator.js';
@@ -167,10 +167,11 @@ export async function debriefCommand(): Promise<void> {
 
   // Generate learned signals via LLM
   const config = loadConfig();
-  if (config.api_key) {
+  const hasProvider = config.api_key || process.env.CLAUDE_CODE_USE_VERTEX === '1' || process.env.GOOGLE_CLOUD_PROJECT;
+  if (hasProvider) {
     const spinner = ora('Generating learned preferences from debrief history...').start();
     try {
-      const provider = new AnthropicProvider(config.api_key);
+      const provider = createProvider(config);
       const learned = await generateLearnedSignals(provider, history);
 
       const learnedPath = getLearnedPath();

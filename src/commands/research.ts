@@ -5,7 +5,7 @@ import ora from 'ora';
 import yaml from 'js-yaml';
 import { simpleGit } from 'simple-git';
 import { loadConfig } from '../data/config.js';
-import { AnthropicProvider } from '../llm/anthropic.js';
+import { createProvider } from '../llm/factory.js';
 import { researchCity, mergeResearch } from '../research/researcher.js';
 import type { TripConstraints, ActivitiesDB } from '../data/schemas.js';
 
@@ -18,10 +18,6 @@ export async function researchCommand(cityArg?: string): Promise<void> {
   }
 
   const config = loadConfig();
-  if (!config.api_key) {
-    console.log(chalk.red('\n  No API key configured. Run: trip-optimizer config set api_key <key>\n'));
-    process.exit(1);
-  }
 
   const constraints = yaml.load(fs.readFileSync(path.join(cwd, 'constraints.yaml'), 'utf-8')) as TripConstraints;
   const dbPath = path.join(cwd, 'activities_db.json');
@@ -30,7 +26,7 @@ export async function researchCommand(cityArg?: string): Promise<void> {
     activitiesDb = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
   }
 
-  const provider = new AnthropicProvider(config.api_key);
+  const provider = createProvider(config);
   const git = simpleGit(cwd);
 
   // Determine which cities to research

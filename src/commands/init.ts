@@ -8,7 +8,7 @@ import { loadConfig, saveConfig } from '../data/config.js';
 import { loadProfile, saveProfile, type Profile } from '../data/profile.js';
 import { getGlobalDir, getLearnedPath } from '../data/paths.js';
 import { scaffoldTrip } from '../data/trip.js';
-import { AnthropicProvider } from '../llm/anthropic.js';
+import { createProvider } from '../llm/factory.js';
 import { generateConstraints, type InitAnswers } from '../generators/constraints.js';
 import { generateRubrics } from '../generators/rubrics.js';
 import { generatePlan } from '../generators/plan.js';
@@ -21,8 +21,9 @@ export async function initCommand(name: string): Promise<void> {
   const config = loadConfig();
   const profile = loadProfile();
 
-  // First-time setup: API key
-  if (!config.api_key) {
+  // First-time setup: API key (skip if Vertex AI detected)
+  const useVertex = !!(process.env.CLAUDE_CODE_USE_VERTEX === '1' || process.env.GOOGLE_CLOUD_PROJECT);
+  if (!config.api_key && !useVertex) {
     console.log(chalk.yellow('  First time? Let\'s set up your profile.\n'));
 
     const apiKey = await input({
@@ -33,6 +34,8 @@ export async function initCommand(name: string): Promise<void> {
     config.api_key = apiKey;
     saveConfig(config);
     console.log(chalk.green('  API key saved.\n'));
+  } else if (useVertex && !config.api_key) {
+    console.log(chalk.cyan('  Using Vertex AI (detected from environment).\n'));
   }
 
   // First-time setup: profile
@@ -159,7 +162,7 @@ export async function initCommand(name: string): Promise<void> {
   }
 
   // Generate LLM-dependent files
-  const provider = new AnthropicProvider(config.api_key);
+  const provider = createProvider(config);
 
   const spinner = ora('Generating scoring rubrics...').start();
   const rubricsYaml = await generateRubrics(provider, constraints, learnedSignals);
