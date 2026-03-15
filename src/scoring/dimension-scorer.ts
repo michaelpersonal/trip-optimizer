@@ -9,19 +9,25 @@ export async function scoreDimension(
   dimConfig: Dimension,
   planContent: string,
 ): Promise<DimensionResult> {
-  const prompt = buildDimensionPrompt(dimName, dimConfig, planContent);
+  const subDimensions = dimConfig.sub_dimensions || {};
+  const prompt = buildDimensionPrompt(dimName, { ...dimConfig, sub_dimensions: subDimensions }, planContent);
   const response = await provider.complete(prompt, 800);
-  const result = parseJsonResponse(response);
+  let result: any;
+  try {
+    result = parseJsonResponse(response);
+  } catch {
+    result = null;
+  }
 
-  const subDims = Object.keys(dimConfig.sub_dimensions);
+  const subDims = Object.keys(subDimensions);
   const subScores: Record<string, SubDimensionScore> = {};
 
   for (const sd of subDims) {
-    if (sd in result) {
+    if (result && typeof result === 'object' && sd in result) {
       const s = result[sd];
       subScores[sd] = {
-        score: typeof s.score === 'number' ? s.score : 75,
-        note: s.note || '',
+        score: typeof s?.score === 'number' ? s.score : 75,
+        note: s?.note || '',
       };
     } else {
       subScores[sd] = { score: 75, note: 'not scored' };

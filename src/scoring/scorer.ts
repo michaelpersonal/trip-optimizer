@@ -23,7 +23,7 @@ export class Scorer {
     rubrics: Rubrics,
     log: (msg: string) => void = console.log,
   ): Promise<AbsoluteScoreResult> {
-    const dimensions = rubrics.dimensions;
+    const dimensions = rubrics.dimensions || {};
     const allScores: Record<string, DimensionResult> = {};
 
     // Pass 1: Score each dimension
@@ -97,15 +97,16 @@ export class Scorer {
     }
 
     // Compute per-dimension impact
-    const dimensions = rubrics.dimensions;
+    const dimensions2 = rubrics.dimensions || {};
     const dimDeltas: Record<string, { delta: number; weight: number; affected_subs: Record<string, number> }> = {};
 
-    for (const [dimName, dimConfig] of Object.entries(dimensions)) {
-      const subCount = Object.keys(dimConfig.sub_dimensions).length;
+    for (const [dimName, dimConfig] of Object.entries(dimensions2)) {
+      const subs = dimConfig.sub_dimensions || {};
+      const subCount = Object.keys(subs).length || 1;
       let dimTotal = 0;
       const affectedSubs: Record<string, number> = {};
 
-      for (const sdName of Object.keys(dimConfig.sub_dimensions)) {
+      for (const sdName of Object.keys(subs)) {
         const fullKey = `${dimName}.${sdName}`;
         const d = clamped[fullKey] || 0;
         dimTotal += d;
