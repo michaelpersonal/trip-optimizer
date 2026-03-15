@@ -1,4 +1,4 @@
-import { input, select, checkbox, confirm } from '@inquirer/prompts';
+import { input, select, checkbox } from '@inquirer/prompts';
 import chalk from 'chalk';
 import ora from 'ora';
 import fs from 'fs';
@@ -6,7 +6,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 import { loadConfig, saveConfig } from '../data/config.js';
 import { loadProfile, saveProfile, type Profile } from '../data/profile.js';
-import { getGlobalDir, getLearnedPath } from '../data/paths.js';
+import { getLearnedPath } from '../data/paths.js';
 import { scaffoldTrip } from '../data/trip.js';
 import { createProvider } from '../llm/factory.js';
 import { generateConstraints, type InitAnswers } from '../generators/constraints.js';
@@ -14,6 +14,7 @@ import { generateRubrics } from '../generators/rubrics.js';
 import { generatePlan } from '../generators/plan.js';
 import { generateProgram } from '../generators/program.js';
 import type { TripConstraints } from '../data/schemas.js';
+import { t, setLanguage, getLanguage, type Language } from '../i18n.js';
 
 function loadExisting(name: string): TripConstraints | null {
   const tripDirName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -26,15 +27,31 @@ function loadExisting(name: string): TripConstraints | null {
   }
 }
 
+function vibeChoices() {
+  return [
+    { value: 'wandering', name: t('vibe.wandering') },
+    { value: 'food', name: t('vibe.food') },
+    { value: 'culture', name: t('vibe.culture') },
+    { value: 'nature', name: t('vibe.nature') },
+    { value: 'adventure', name: t('vibe.adventure') },
+    { value: 'relaxation', name: t('vibe.relaxation') },
+    { value: 'nightlife', name: t('vibe.nightlife') },
+    { value: 'history', name: t('vibe.history') },
+    { value: 'shopping', name: t('vibe.shopping') },
+    { value: 'family', name: t('vibe.family') },
+    { value: 'romantic', name: t('vibe.romantic') },
+  ];
+}
+
 async function collectAnswers(name: string, profile: Profile): Promise<InitAnswers> {
-  const startDate = await input({ message: 'Start date (YYYY-MM-DD):' });
-  const endDate = await input({ message: 'End date (YYYY-MM-DD):' });
-  const travelers = await input({ message: 'Number of travelers:', default: '2' });
-  const origin = await input({ message: 'Departing from (city):', default: 'Atlanta' });
+  const startDate = await input({ message: t('trip.start_date') });
+  const endDate = await input({ message: t('trip.end_date') });
+  const travelers = await input({ message: t('trip.travelers'), default: '2' });
+  const origin = await input({ message: t('trip.origin'), default: 'Atlanta' });
 
   const citiesRaw = await input({
-    message: 'Cities in order (comma-separated):',
-    validate: (v) => v.includes(',') || v.length > 0 || 'Enter at least one city',
+    message: t('trip.cities'),
+    validate: (v) => v.includes(',') || v.length > 0 || t('trip.cities_validate'),
   });
 
   const cities = citiesRaw.split(',').map(c => {
@@ -43,27 +60,15 @@ async function collectAnswers(name: string, profile: Profile): Promise<InitAnswe
     return { name: trimmed, key };
   });
 
-  const budgetTotal = await input({ message: 'Total budget (USD):', default: '5000' });
+  const budgetTotal = await input({ message: t('trip.budget'), default: '5000' });
 
   const vibes = await checkbox({
-    message: 'Pick your vibes (Space to select, Enter to confirm):',
-    choices: [
-      { value: 'wandering', name: 'Wandering & exploring' },
-      { value: 'food', name: 'Food & culinary' },
-      { value: 'culture', name: 'Culture & arts' },
-      { value: 'nature', name: 'Nature & outdoors' },
-      { value: 'adventure', name: 'Adventure & thrills' },
-      { value: 'relaxation', name: 'Relaxation & wellness' },
-      { value: 'nightlife', name: 'Nightlife & entertainment' },
-      { value: 'history', name: 'History & heritage' },
-      { value: 'shopping', name: 'Shopping' },
-      { value: 'family', name: 'Family-friendly' },
-      { value: 'romantic', name: 'Romantic' },
-    ],
+    message: t('trip.vibes'),
+    choices: vibeChoices(),
   });
 
   const antiPatternsRaw = await input({
-    message: 'Anything to avoid? (comma-separated, or press Enter to skip):',
+    message: t('trip.anti_patterns'),
     default: profile.anti_patterns_learned.length > 0 ? profile.anti_patterns_learned.join(', ') : '',
   });
 
@@ -89,23 +94,22 @@ async function collectAnswers(name: string, profile: Profile): Promise<InitAnswe
 
 async function editAnswers(name: string, existing: TripConstraints, profile: Profile): Promise<InitAnswers> {
   // Show current settings
-  console.log(chalk.bold('  Current settings:\n'));
-  console.log(`    ${chalk.dim('1.')} Start date:    ${chalk.white(existing.trip.start_date)}`);
-  console.log(`    ${chalk.dim('2.')} End date:      ${chalk.white(existing.trip.end_date)}`);
-  console.log(`    ${chalk.dim('3.')} Travelers:     ${chalk.white(String(existing.trip.travelers))}`);
-  console.log(`    ${chalk.dim('4.')} Origin:        ${chalk.white(existing.trip.origin)}`);
-  console.log(`    ${chalk.dim('5.')} Cities:        ${chalk.white(existing.cities.map(c => c.name).join(', '))}`);
-  console.log(`    ${chalk.dim('6.')} Budget:        ${chalk.white(`${existing.budget?.currency || 'USD'} ${existing.budget?.total || 5000}`)}`);
-  console.log(`    ${chalk.dim('7.')} Vibes:         ${chalk.white(existing.preferences.priority_order.join(', '))}`);
-  console.log(`    ${chalk.dim('8.')} Anti-patterns: ${chalk.white(existing.preferences.anti_patterns.join(', ') || 'none')}`);
+  console.log(chalk.bold(`  ${t('edit.current_settings')}\n`));
+  console.log(`    ${chalk.dim('1.')} ${t('field.dates')}:          ${chalk.white(`${existing.trip.start_date} → ${existing.trip.end_date}`)}`);
+  console.log(`    ${chalk.dim('2.')} ${t('field.travelers')}:      ${chalk.white(String(existing.trip.travelers))}`);
+  console.log(`    ${chalk.dim('3.')} ${t('field.origin')}:         ${chalk.white(existing.trip.origin)}`);
+  console.log(`    ${chalk.dim('4.')} ${t('field.cities')}:         ${chalk.white(existing.cities.map(c => c.name).join(', '))}`);
+  console.log(`    ${chalk.dim('5.')} ${t('field.budget')}:         ${chalk.white(`${existing.budget?.currency || 'USD'} ${existing.budget?.total || 5000}`)}`);
+  console.log(`    ${chalk.dim('6.')} ${t('field.vibes')}:          ${chalk.white(existing.preferences.priority_order.join(', '))}`);
+  console.log(`    ${chalk.dim('7.')} ${t('field.anti_patterns')}:  ${chalk.white(existing.preferences.anti_patterns.join(', ') || 'none')}`);
   console.log();
 
   const editChoice = await select({
-    message: 'What would you like to do?',
+    message: t('edit.what_to_do'),
     choices: [
-      { value: 'regenerate', name: 'Regenerate with same settings' },
-      { value: 'edit', name: 'Edit specific fields' },
-      { value: 'restart', name: 'Start over from scratch' },
+      { value: 'regenerate', name: t('edit.regenerate') },
+      { value: 'edit', name: t('edit.edit_fields') },
+      { value: 'restart', name: t('edit.restart') },
     ],
   });
 
@@ -125,32 +129,32 @@ async function editAnswers(name: string, existing: TripConstraints, profile: Pro
 
   if (editChoice === 'edit') {
     const fieldsToEdit = await checkbox({
-      message: 'Which fields to edit? (Space to select, Enter to confirm):',
+      message: t('edit.which_fields'),
       choices: [
-        { value: 'dates', name: `Dates (${startDate} → ${endDate})` },
-        { value: 'travelers', name: `Travelers (${travelers})` },
-        { value: 'origin', name: `Origin (${origin})` },
-        { value: 'cities', name: `Cities (${cities.map(c => c.name).join(', ')})` },
-        { value: 'budget', name: `Budget (${budgetTotal})` },
-        { value: 'vibes', name: `Vibes (${vibes.join(', ')})` },
-        { value: 'anti_patterns', name: `Anti-patterns (${antiPatterns.join(', ') || 'none'})` },
+        { value: 'dates', name: `${t('field.dates')} (${startDate} → ${endDate})` },
+        { value: 'travelers', name: `${t('field.travelers')} (${travelers})` },
+        { value: 'origin', name: `${t('field.origin')} (${origin})` },
+        { value: 'cities', name: `${t('field.cities')} (${cities.map(c => c.name).join(', ')})` },
+        { value: 'budget', name: `${t('field.budget')} (${budgetTotal})` },
+        { value: 'vibes', name: `${t('field.vibes')} (${vibes.join(', ')})` },
+        { value: 'anti_patterns', name: `${t('field.anti_patterns')} (${antiPatterns.join(', ') || 'none'})` },
       ],
     });
 
     if (fieldsToEdit.includes('dates')) {
-      startDate = await input({ message: 'Start date (YYYY-MM-DD):', default: startDate });
-      endDate = await input({ message: 'End date (YYYY-MM-DD):', default: endDate });
+      startDate = await input({ message: t('trip.start_date'), default: startDate });
+      endDate = await input({ message: t('trip.end_date'), default: endDate });
     }
     if (fieldsToEdit.includes('travelers')) {
-      const t = await input({ message: 'Number of travelers:', default: String(travelers) });
-      travelers = parseInt(t, 10);
+      const val = await input({ message: t('trip.travelers'), default: String(travelers) });
+      travelers = parseInt(val, 10);
     }
     if (fieldsToEdit.includes('origin')) {
-      origin = await input({ message: 'Departing from (city):', default: origin });
+      origin = await input({ message: t('trip.origin'), default: origin });
     }
     if (fieldsToEdit.includes('cities')) {
       const citiesRaw = await input({
-        message: 'Cities in order (comma-separated):',
+        message: t('trip.cities'),
         default: cities.map(c => c.name).join(', '),
       });
       cities = citiesRaw.split(',').map(c => {
@@ -160,30 +164,18 @@ async function editAnswers(name: string, existing: TripConstraints, profile: Pro
       });
     }
     if (fieldsToEdit.includes('budget')) {
-      const b = await input({ message: 'Total budget (USD):', default: String(budgetTotal) });
-      budgetTotal = parseInt(b, 10);
+      const val = await input({ message: t('trip.budget'), default: String(budgetTotal) });
+      budgetTotal = parseInt(val, 10);
     }
     if (fieldsToEdit.includes('vibes')) {
       vibes = await checkbox({
-        message: 'Pick your vibes (Space to select, Enter to confirm):',
-        choices: [
-          { value: 'wandering', name: 'Wandering & exploring' },
-          { value: 'food', name: 'Food & culinary' },
-          { value: 'culture', name: 'Culture & arts' },
-          { value: 'nature', name: 'Nature & outdoors' },
-          { value: 'adventure', name: 'Adventure & thrills' },
-          { value: 'relaxation', name: 'Relaxation & wellness' },
-          { value: 'nightlife', name: 'Nightlife & entertainment' },
-          { value: 'history', name: 'History & heritage' },
-          { value: 'shopping', name: 'Shopping' },
-          { value: 'family', name: 'Family-friendly' },
-          { value: 'romantic', name: 'Romantic' },
-        ].map(c => ({ ...c, checked: vibes.includes(c.value) })),
+        message: t('trip.vibes'),
+        choices: vibeChoices().map(c => ({ ...c, checked: vibes.includes(c.value) })),
       });
     }
     if (fieldsToEdit.includes('anti_patterns')) {
       const raw = await input({
-        message: 'Anything to avoid? (comma-separated):',
+        message: t('trip.anti_patterns'),
         default: antiPatterns.join(', '),
       });
       antiPatterns = raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -207,33 +199,86 @@ async function editAnswers(name: string, existing: TripConstraints, profile: Pro
 }
 
 export async function initCommand(name: string): Promise<void> {
-  console.log(chalk.bold(`\n  trip-optimizer: ${name}\n`));
-
   const config = loadConfig();
+
+  // === Step 0: Language (always first) ===
+  const lang = await select({
+    message: t('init.language'),
+    choices: [
+      { value: 'en', name: 'English' },
+      { value: 'zh', name: '中文（简体）' },
+    ],
+    default: config.language || 'en',
+  }) as Language;
+
+  setLanguage(lang);
+  config.language = lang;
+  saveConfig(config);
+
+  console.log(chalk.bold(`\n  ${t('init.title')}: ${name}\n`));
+
   const profile = loadProfile();
 
-  // First-time setup: API key (skip if Vertex AI detected)
+  // === Step 1: API key (skip if Vertex AI detected) ===
   const useVertex = !!(process.env.CLAUDE_CODE_USE_VERTEX === '1' || process.env.GOOGLE_CLOUD_PROJECT);
   if (!config.api_key && !useVertex) {
-    console.log(chalk.yellow('  First time? Let\'s set up your profile.\n'));
+    console.log(chalk.yellow(`  ${t('init.first_time')}\n`));
 
     const apiKey = await input({
-      message: 'Anthropic API key:',
-      validate: (v) => v.length > 0 || 'API key is required',
+      message: t('init.api_key'),
+      validate: (v) => v.length > 0 || t('init.api_key_required'),
     });
 
     config.api_key = apiKey;
     saveConfig(config);
-    console.log(chalk.green('  API key saved.\n'));
+    console.log(chalk.green(`  ${t('init.api_key_saved')}\n`));
   } else if (useVertex && !config.api_key) {
-    console.log(chalk.cyan('  Using Vertex AI (detected from environment).\n'));
+    console.log(chalk.cyan(`  ${t('init.vertex_detected')}\n`));
   }
 
-  // First-time setup: profile (only if never set)
+  // === Step 2: Model override (optional) ===
+  if (!config.model_override) {
+    const wantOverride = await select({
+      message: t('init.model_override'),
+      choices: [
+        { value: 'no', name: t('init.model_override_no') },
+        { value: 'yes', name: t('init.model_override_yes') },
+      ],
+    });
+
+    if (wantOverride === 'yes') {
+      const model = await input({
+        message: t('init.model_name'),
+        validate: (v) => v.length > 0 || 'Required',
+      });
+      const baseUrl = await input({
+        message: t('init.model_base_url'),
+        validate: (v) => v.startsWith('http') || 'Must be a URL',
+      });
+      const apiKey = await input({
+        message: t('init.model_api_key'),
+        validate: (v) => v.length > 0 || 'Required',
+      });
+
+      config.model_override = {
+        provider_type: 'openai-compatible',
+        model,
+        base_url: baseUrl,
+        api_key: apiKey,
+      };
+      saveConfig(config);
+      console.log(chalk.green(`\n  ${t('init.model_saved')}`));
+      console.log(chalk.yellow(`  ${t('init.model_note')}\n`));
+    }
+  } else {
+    console.log(chalk.cyan(`  Custom model: ${config.model_override.model} (${config.model_override.base_url})\n`));
+  }
+
+  // === Step 3: Profile (first-time only) ===
   const profileNeverSet = profile.loyalty_program === '' && profile.stated_vibes.length === 0 && profile.dietary.length === 0;
   if (profileNeverSet && !loadExisting(name)) {
     const loyalty = await select({
-      message: 'Hotel loyalty program:',
+      message: t('profile.loyalty'),
       choices: [
         { value: 'marriott_bonvoy', name: 'Marriott Bonvoy' },
         { value: 'hilton_honors', name: 'Hilton Honors' },
@@ -244,7 +289,7 @@ export async function initCommand(name: string): Promise<void> {
     });
 
     const dietaryChoices = await checkbox({
-      message: 'Dietary restrictions (Space to select, Enter to confirm):',
+      message: t('profile.dietary'),
       choices: [
         { value: 'vegetarian', name: 'Vegetarian' },
         { value: 'vegan', name: 'Vegan' },
@@ -261,7 +306,7 @@ export async function initCommand(name: string): Promise<void> {
     saveProfile(profile);
   }
 
-  // Collect or edit trip answers
+  // === Step 4: Trip answers ===
   const existing = loadExisting(name);
   let answers: InitAnswers;
 
@@ -271,60 +316,56 @@ export async function initCommand(name: string): Promise<void> {
     answers = await collectAnswers(name, profile);
   }
 
-  // Generate constraints
+  // === Step 5: Generate ===
   const constraintsYaml = generateConstraints(answers);
   const constraints = yaml.load(constraintsYaml) as TripConstraints;
 
-  // Load learned signals if available
   let learnedSignals: string | undefined;
   const learnedPath = getLearnedPath();
   if (fs.existsSync(learnedPath)) {
     learnedSignals = fs.readFileSync(learnedPath, 'utf-8');
   }
 
-  // Generate LLM-dependent files
   let provider;
   try {
     provider = createProvider(config);
   } catch (err) {
-    console.log(chalk.red(`\n  Failed to create LLM provider: ${err instanceof Error ? err.message : String(err)}\n`));
+    console.log(chalk.red(`\n  ${t('error.provider_fail')}: ${err instanceof Error ? err.message : String(err)}\n`));
     process.exit(1);
   }
 
-  const spinner = ora('Generating scoring rubrics...').start();
+  const spinner = ora(t('progress.generating_rubrics')).start();
   let rubricsYaml: string;
   try {
     rubricsYaml = await generateRubrics(provider, constraints, learnedSignals);
-    spinner.succeed('Scoring rubrics generated');
+    spinner.succeed(t('progress.rubrics_done'));
   } catch (err) {
-    spinner.fail('Failed to generate scoring rubrics');
+    spinner.fail(t('progress.rubrics_fail'));
     const msg = err instanceof Error ? err.message : String(err);
     console.log(chalk.red(`\n  ${msg}`));
     if (msg.includes('404') || msg.includes('NOT_FOUND')) {
-      console.log(chalk.yellow(`  Check that your model is available: ANTHROPIC_MODEL=${process.env.ANTHROPIC_MODEL || '(not set)'}`));
+      console.log(chalk.yellow(`  ${t('error.model_check')}: ANTHROPIC_MODEL=${process.env.ANTHROPIC_MODEL || '(not set)'}`));
       console.log(chalk.yellow(`  Project: ${process.env.GOOGLE_CLOUD_PROJECT || '(not set)'}, Region: ${process.env.GOOGLE_CLOUD_LOCATION || '(not set)'}`));
     } else if (msg.includes('401') || msg.includes('403') || msg.includes('PERMISSION')) {
-      console.log(chalk.yellow('  Check your authentication: run "gcloud auth application-default login"'));
+      console.log(chalk.yellow(`  ${t('error.auth_check')}`));
     }
     console.log();
     process.exit(1);
   }
 
-  spinner.start('Generating initial plan...');
+  spinner.start(t('progress.generating_plan'));
   let planMd: string;
   try {
     planMd = await generatePlan(provider, constraints);
-    spinner.succeed('Initial plan generated');
+    spinner.succeed(t('progress.plan_done'));
   } catch (err) {
-    spinner.fail('Failed to generate initial plan');
+    spinner.fail(t('progress.plan_fail'));
     console.log(chalk.red(`\n  ${err instanceof Error ? err.message : String(err)}\n`));
     process.exit(1);
   }
 
-  // Generate program.md (no LLM needed)
   const programMd = generateProgram(constraints, config);
 
-  // Scaffold the trip project
   const tripDirName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const tripDir = path.resolve(tripDirName);
 
@@ -332,19 +373,19 @@ export async function initCommand(name: string): Promise<void> {
     fs.rmSync(tripDir, { recursive: true, force: true });
   }
 
-  spinner.start('Creating trip project...');
+  spinner.start(t('progress.creating_project'));
   await scaffoldTrip(tripDir, {
     constraints: constraintsYaml,
     rubrics: rubricsYaml,
     plan: planMd,
     program: programMd,
   });
-  spinner.succeed(`Trip project created at ${chalk.bold(tripDirName)}/`);
+  spinner.succeed(`${t('progress.project_created')} ${chalk.bold(tripDirName)}/`);
 
   console.log(`
-  ${chalk.green('Next steps:')}
+  ${chalk.green(t('next.title'))}
     cd ${tripDirName}
-    ${chalk.dim('# Review constraints.yaml and rubrics.yaml')}
+    ${chalk.dim(t('next.review'))}
     trip-optimizer run
 `);
 }

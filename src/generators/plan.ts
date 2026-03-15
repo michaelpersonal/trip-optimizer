@@ -1,10 +1,13 @@
 import type { LLMProvider } from '../llm/provider.js';
 import type { TripConstraints } from '../data/schemas.js';
+import { getLlmLanguageInstruction } from '../i18n.js';
 
 export async function generatePlan(
   provider: LLMProvider,
   constraints: TripConstraints,
 ): Promise<string> {
+  const langInstruction = getLlmLanguageInstruction();
+
   const prompt = `Generate a detailed day-by-day travel itinerary for this trip.
 
 ## Trip Details
@@ -51,7 +54,7 @@ end_date: ${constraints.trip.end_date}
 **Hotel:** [Name]
 **Transit:** [if applicable]
 
-Generate the complete itinerary now.`;
+Generate the complete itinerary now.${langInstruction}`;
 
   return await provider.complete(prompt, 8000);
 }

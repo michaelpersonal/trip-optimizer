@@ -11,6 +11,12 @@ import { historyCommand } from './commands/history.js';
 import { dashboardCommand } from './commands/dashboard.js';
 import { chartCommand } from './commands/chart.js';
 import { planCommand } from './commands/plan.js';
+import { loadConfig } from './data/config.js';
+import { setLanguage } from './i18n.js';
+
+// Load language from config at startup
+const _cfg = loadConfig();
+if (_cfg.language) setLanguage(_cfg.language);
 
 const program = new Command();
 

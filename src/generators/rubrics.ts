@@ -1,5 +1,6 @@
 import type { LLMProvider } from '../llm/provider.js';
 import type { TripConstraints } from '../data/schemas.js';
+import { getLlmLanguageInstruction } from '../i18n.js';
 
 // Seed rubric example (condensed from the China trip)
 const SEED_RUBRIC = `dimensions:
@@ -137,7 +138,7 @@ IMPORTANT:
 - Dimension weights must sum to 1.0
 - Anchor descriptions should reference specifics of this trip (cities, season, budget level)
 - Keep the same YAML structure as the seed example
-- Return ONLY valid YAML, no other text`;
+- Return ONLY valid YAML, no other text${getLlmLanguageInstruction()}`;
 
   const response = await provider.complete(prompt, 4000);
 

@@ -19,11 +19,13 @@ export async function runCommand(options: RunOptions): Promise<void> {
     process.exit(1);
   }
 
+  const config = loadConfig();
+
   if (options.standalone) {
-    const config = loadConfig();
     const provider = createProvider(config);
 
-    console.log(chalk.bold('\n  trip-optimizer: standalone mode\n'));
+    const modelName = config.model_override?.model || process.env.ANTHROPIC_MODEL || 'default';
+    console.log(chalk.bold(`\n  trip-optimizer: standalone mode (${modelName})\n`));
 
     await runOptimizationLoop({
       provider,
@@ -31,6 +33,12 @@ export async function runCommand(options: RunOptions): Promise<void> {
       onIteration: () => {},
     });
     return;
+  }
+
+  // Agent mode requires Claude Code — warn if custom model is configured
+  if (config.model_override) {
+    console.log(chalk.yellow('\n  Custom model configured — agent mode still uses Claude Code.'));
+    console.log(chalk.yellow('  Use --standalone to run with your custom model.\n'));
   }
 
   // Default: agent mode (interactive)
