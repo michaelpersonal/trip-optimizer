@@ -198,6 +198,27 @@ async function editAnswers(name: string, existing: TripConstraints, profile: Pro
   };
 }
 
+function printProviderErrorHint(cfg: ReturnType<typeof loadConfig>, msg: string): void {
+  if (cfg.model_override) {
+    const mo = cfg.model_override;
+    if (msg.includes('401') || msg.includes('403') || msg.includes('Authentication') || msg.includes('Unauthorized')) {
+      console.log(chalk.yellow(`  API key for ${mo.model} is invalid or expired.`));
+      console.log(chalk.yellow(`  Run: trip-optimizer config set model_override.api_key <new-key>`));
+      console.log(chalk.yellow(`  Or re-run: trip-optimizer init "${cfg.model_override.model}" to reconfigure.`));
+    } else if (msg.includes('404') || msg.includes('NOT_FOUND')) {
+      console.log(chalk.yellow(`  Model "${mo.model}" not found at ${mo.base_url}`));
+    }
+  } else if (msg.includes('401') || msg.includes('403') || msg.includes('PERMISSION')) {
+    if (process.env.CLAUDE_CODE_USE_VERTEX === '1' || process.env.GOOGLE_CLOUD_PROJECT) {
+      console.log(chalk.yellow(`  ${t('error.auth_check')}`));
+    } else {
+      console.log(chalk.yellow('  Anthropic API key is invalid. Run: trip-optimizer config set api_key <key>'));
+    }
+  } else if (msg.includes('404') || msg.includes('NOT_FOUND')) {
+    console.log(chalk.yellow(`  ${t('error.model_check')}: ANTHROPIC_MODEL=${process.env.ANTHROPIC_MODEL || '(not set)'}`));
+  }
+}
+
 export async function initCommand(name: string): Promise<void> {
   const config = loadConfig();
 
@@ -343,12 +364,7 @@ export async function initCommand(name: string): Promise<void> {
     spinner.fail(t('progress.rubrics_fail'));
     const msg = err instanceof Error ? err.message : String(err);
     console.log(chalk.red(`\n  ${msg}`));
-    if (msg.includes('404') || msg.includes('NOT_FOUND')) {
-      console.log(chalk.yellow(`  ${t('error.model_check')}: ANTHROPIC_MODEL=${process.env.ANTHROPIC_MODEL || '(not set)'}`));
-      console.log(chalk.yellow(`  Project: ${process.env.GOOGLE_CLOUD_PROJECT || '(not set)'}, Region: ${process.env.GOOGLE_CLOUD_LOCATION || '(not set)'}`));
-    } else if (msg.includes('401') || msg.includes('403') || msg.includes('PERMISSION')) {
-      console.log(chalk.yellow(`  ${t('error.auth_check')}`));
-    }
+    printProviderErrorHint(config, msg);
     console.log();
     process.exit(1);
   }

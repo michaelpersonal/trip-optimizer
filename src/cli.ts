@@ -96,11 +96,20 @@ program
 process.on('unhandledRejection', (err) => {
   const msg = err instanceof Error ? err.message : String(err);
   console.error(`\n  \x1b[31mError: ${msg}\x1b[0m`);
-  if (msg.includes('404') || msg.includes('NOT_FOUND')) {
-    console.error(`  \x1b[33mModel not found. Check ANTHROPIC_MODEL=${process.env.ANTHROPIC_MODEL || '(not set)'}\x1b[0m`);
-    console.error(`  \x1b[33mProject: ${process.env.GOOGLE_CLOUD_PROJECT || '(not set)'}, Region: ${process.env.GOOGLE_CLOUD_LOCATION || '(not set)'}\x1b[0m`);
-  } else if (msg.includes('401') || msg.includes('403') || msg.includes('PERMISSION')) {
-    console.error('  \x1b[33mAuthentication failed. Run: gcloud auth application-default login\x1b[0m');
+  if (msg.includes('401') || msg.includes('403') || msg.includes('Authentication') || msg.includes('PERMISSION')) {
+    if (_cfg.model_override) {
+      console.error(`  \x1b[33mAPI key for ${_cfg.model_override.model} is invalid or expired.\x1b[0m`);
+    } else if (process.env.CLAUDE_CODE_USE_VERTEX === '1' || process.env.GOOGLE_CLOUD_PROJECT) {
+      console.error('  \x1b[33mAuthentication failed. Run: gcloud auth application-default login\x1b[0m');
+    } else {
+      console.error('  \x1b[33mAnthropic API key is invalid. Run: trip-optimizer config set api_key <key>\x1b[0m');
+    }
+  } else if (msg.includes('404') || msg.includes('NOT_FOUND')) {
+    if (_cfg.model_override) {
+      console.error(`  \x1b[33mModel "${_cfg.model_override.model}" not found at ${_cfg.model_override.base_url}\x1b[0m`);
+    } else {
+      console.error(`  \x1b[33mModel not found. Check ANTHROPIC_MODEL=${process.env.ANTHROPIC_MODEL || '(not set)'}\x1b[0m`);
+    }
   } else if (msg.includes('ENOTFOUND') || msg.includes('ECONNREFUSED')) {
     console.error('  \x1b[33mNetwork error. Check your internet connection.\x1b[0m');
   }
