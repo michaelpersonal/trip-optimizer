@@ -240,24 +240,7 @@ export async function initCommand(name: string): Promise<void> {
 
   const profile = loadProfile();
 
-  // === Step 1: API key (skip if Vertex AI detected) ===
-  const useVertex = !!(process.env.CLAUDE_CODE_USE_VERTEX === '1' || process.env.GOOGLE_CLOUD_PROJECT);
-  if (!config.api_key && !useVertex) {
-    console.log(chalk.yellow(`  ${t('init.first_time')}\n`));
-
-    const apiKey = await input({
-      message: t('init.api_key'),
-      validate: (v) => v.length > 0 || t('init.api_key_required'),
-    });
-
-    config.api_key = apiKey;
-    saveConfig(config);
-    console.log(chalk.green(`  ${t('init.api_key_saved')}\n`));
-  } else if (useVertex && !config.api_key) {
-    console.log(chalk.cyan(`  ${t('init.vertex_detected')}\n`));
-  }
-
-  // === Step 2: Model override (optional) ===
+  // === Step 1: Model override (ask first — determines if API key is needed) ===
   if (config.model_override) {
     const mo = config.model_override;
     const maskedKey = mo.api_key.length > 8
@@ -325,6 +308,24 @@ export async function initCommand(name: string): Promise<void> {
       saveConfig(config);
       console.log(chalk.green(`\n  ${t('init.model_saved')}`));
       console.log(chalk.yellow(`  ${t('init.model_note')}\n`));
+    }
+  }
+
+  // === Step 2: API key (only if no custom model and no Vertex AI) ===
+  const useVertex = !!(process.env.CLAUDE_CODE_USE_VERTEX === '1' || process.env.GOOGLE_CLOUD_PROJECT);
+  if (!config.model_override && !useVertex) {
+    if (!config.api_key) {
+      const apiKey = await input({
+        message: t('init.api_key'),
+        validate: (v) => v.length > 0 || 'Required',
+      });
+      config.api_key = apiKey;
+      saveConfig(config);
+    } else {
+      const maskedKey = config.api_key.length > 8
+        ? config.api_key.slice(0, 4) + '...' + config.api_key.slice(-4)
+        : '****';
+      console.log(chalk.cyan(`  Anthropic API key: ${maskedKey}\n`));
     }
   }
 
