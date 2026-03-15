@@ -2,9 +2,12 @@ import type { Dimension, Rubrics, ActivitiesDB } from '../data/schemas.js';
 
 export function buildRubricText(dimConfig: Dimension): string {
   const lines: string[] = [];
-  for (const [subName, subConfig] of Object.entries(dimConfig.sub_dimensions)) {
-    lines.push(`\n### ${subName}: ${subConfig.description}`);
-    const sortedAnchors = Object.entries(subConfig.anchors)
+  const subs = dimConfig.sub_dimensions || {};
+  for (const [subName, subConfig] of Object.entries(subs)) {
+    if (!subConfig) continue;
+    lines.push(`\n### ${subName}: ${subConfig.description || ''}`);
+    const anchors = subConfig.anchors || {};
+    const sortedAnchors = Object.entries(anchors)
       .sort(([a], [b]) => Number(a) - Number(b));
     for (const [score, desc] of sortedAnchors) {
       lines.push(`  ${score}: ${desc}`);
@@ -19,7 +22,21 @@ export function buildDimensionPrompt(
   planContent: string,
 ): string {
   const rubricText = buildRubricText(dimConfig);
-  const subDims = Object.keys(dimConfig.sub_dimensions);
+  const subs = dimConfig.sub_dimensions || {};
+  const subDims = Object.keys(subs);
+
+  if (subDims.length === 0) {
+    // No sub-dimensions defined — ask for a single overall score
+    return `Score this travel plan on the dimension: ${dimName}
+
+Score on a 0-100 scale. Do NOT round to multiples of 5.
+
+## Travel Plan
+${planContent}
+
+Respond in this exact JSON format (no other text):
+{"overall": {"score": <0-100>, "note": "<1 sentence>"}}`;
+  }
 
   return `Score this travel plan on the dimension: ${dimName}
 
@@ -45,17 +62,20 @@ export function buildCriticPrompt(
 ): string {
   // Build penalty rules text
   const rulesText: string[] = [];
-  for (const [category, rules] of Object.entries(rubrics.adversarial_penalties)) {
+  const penalties = rubrics.adversarial_penalties || {};
+  for (const [category, rules] of Object.entries(penalties)) {
     if (category === 'max_penalty_per_dimension') continue;
     if (!Array.isArray(rules)) continue;
     for (const r of rules) {
-      rulesText.push(`- [${category.toUpperCase()}] ${r.rule} (penalty: ${r.penalty})`);
+      if (!r) continue;
+      rulesText.push(`- [${category.toUpperCase()}] ${r.rule || ''} (penalty: ${r.penalty || -3})`);
     }
   }
 
   // Build tourist traps list
   const traps: string[] = [];
-  for (const [city, data] of Object.entries(activitiesDb)) {
+  for (const [city, data] of Object.entries(activitiesDb || {})) {
+    if (!data) continue;
     for (const t of data.tourist_traps || []) {
       traps.push(`- ${city}: ${t.name}`);
     }
@@ -64,7 +84,7 @@ export function buildCriticPrompt(
   return `You are a travel plan critic. Your ONLY job is to find flaws.
 Do NOT praise anything. Apply these specific penalty rules:
 
-${rulesText.join('\n')}
+${rulesText.length > 0 ? rulesText.join('\n') : '(no specific rules defined — use general travel planning best practices)'}
 
 ## Known Tourist Traps (from research database)
 ${traps.length > 0 ? traps.join('\n') : '(none researched yet)'}
@@ -86,10 +106,11 @@ export function buildHolisticPrompt(
 ): string {
   const scoresSummary: string[] = [];
   for (const [dim, data] of Object.entries(allScores)) {
-    const subDetail = Object.entries(data.sub_dimensions)
-      .map(([sd, info]) => `${sd}: ${info.score.toFixed(0)}`)
+    const subs = data.sub_dimensions || {};
+    const subDetail = Object.entries(subs)
+      .map(([sd, info]) => `${sd}: ${(info?.score ?? 0).toFixed(0)}`)
       .join(', ');
-    scoresSummary.push(`- ${dim}: ${data.score.toFixed(1)} (weight: ${data.weight}) [${subDetail}]`);
+    scoresSummary.push(`- ${dim}: ${(data.score ?? 0).toFixed(1)} (weight: ${data.weight}) [${subDetail}]`);
   }
 
   return `You are reviewing scores from independent judges evaluating a travel plan.
@@ -119,8 +140,10 @@ export function buildComparativePrompt(
   rubrics: Rubrics,
 ): string {
   const allSubDims: string[] = [];
-  for (const [dimName, dimConfig] of Object.entries(rubrics.dimensions)) {
-    for (const sdName of Object.keys(dimConfig.sub_dimensions)) {
+  const dims = rubrics.dimensions || {};
+  for (const [dimName, dimConfig] of Object.entries(dims)) {
+    const subs = dimConfig?.sub_dimensions || {};
+    for (const sdName of Object.keys(subs)) {
       allSubDims.push(`${dimName}.${sdName}`);
     }
   }
