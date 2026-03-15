@@ -82,6 +82,8 @@ program
 program
   .command('plan')
   .description('Pretty-print the current travel plan')
+  .option('--pdf', 'Generate a PDF document')
+  .option('-o, --output <path>', 'Output path for PDF')
   .action(planCommand);
 
 // Global error handler — catch unhandled LLM / provider errors
