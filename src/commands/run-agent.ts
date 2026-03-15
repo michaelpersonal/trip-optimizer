@@ -30,41 +30,31 @@ export async function launchAgent(tripDir: string, options: { safe?: boolean }):
   const programContent = generateProgram(constraints, config);
   const programPath = path.join(tripDir, 'program.md');
   fs.writeFileSync(programPath, programContent);
-  console.log(chalk.green(`\n  Generated ${programPath}\n`));
+  console.log(chalk.green(`\n  Generated ${programPath}`));
 
-  // 4. Launch claude as child process
+  // 4. Launch claude as interactive session
   const args: string[] = [];
   if (!options.safe) {
     args.push('--dangerously-skip-permissions');
   }
-  args.push('-p', 'Read program.md and begin the optimization loop. Run until interrupted.');
 
   const mode = options.safe ? 'safe mode' : 'yolo mode';
-  console.log(chalk.bold(`  Launching Claude Code in ${mode}...\n`));
+  console.log(chalk.bold(`  Launching Claude Code in ${mode}...`));
+  console.log(chalk.dim(`  program.md is ready — tell Claude to "Read program.md and start optimizing"\n`));
 
   const child = spawn('claude', args, {
     cwd: tripDir,
-    stdio: ['inherit', 'pipe', 'pipe'],
-  });
-
-  // 5. Pipe output, handle exit
-  child.stdout?.on('data', (data: Buffer) => {
-    process.stdout.write(data);
-  });
-
-  child.stderr?.on('data', (data: Buffer) => {
-    process.stderr.write(data);
+    stdio: 'inherit',
   });
 
   return new Promise<void>((resolve, reject) => {
     child.on('close', (code) => {
       if (code === 0 || code === null) {
-        console.log(chalk.green('\n  Agent exited cleanly.\n'));
-        resolve();
+        console.log(chalk.green('\n  Agent session ended.\n'));
       } else {
         console.log(chalk.yellow(`\n  Agent exited with code ${code}.\n`));
-        resolve();
       }
+      resolve();
     });
 
     child.on('error', (err) => {

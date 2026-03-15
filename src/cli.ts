@@ -47,9 +47,9 @@ program
 
 program
   .command('run')
-  .description('Start the optimization loop')
-  .option('--agent', 'Launch as Claude Code agent (yolo mode)')
-  .option('--safe', 'Use normal permissions in agent mode')
+  .description('Start the optimization loop (default: agent mode)')
+  .option('--standalone', 'Use direct API calls instead of Claude Code agent')
+  .option('--safe', 'Use normal permissions in agent mode (no yolo)')
   .action(runCommand);
 
 program
@@ -82,5 +82,21 @@ program
   .command('plan')
   .description('Pretty-print the current travel plan')
   .action(planCommand);
+
+// Global error handler — catch unhandled LLM / provider errors
+process.on('unhandledRejection', (err) => {
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(`\n  \x1b[31mError: ${msg}\x1b[0m`);
+  if (msg.includes('404') || msg.includes('NOT_FOUND')) {
+    console.error(`  \x1b[33mModel not found. Check ANTHROPIC_MODEL=${process.env.ANTHROPIC_MODEL || '(not set)'}\x1b[0m`);
+    console.error(`  \x1b[33mProject: ${process.env.GOOGLE_CLOUD_PROJECT || '(not set)'}, Region: ${process.env.GOOGLE_CLOUD_LOCATION || '(not set)'}\x1b[0m`);
+  } else if (msg.includes('401') || msg.includes('403') || msg.includes('PERMISSION')) {
+    console.error('  \x1b[33mAuthentication failed. Run: gcloud auth application-default login\x1b[0m');
+  } else if (msg.includes('ENOTFOUND') || msg.includes('ECONNREFUSED')) {
+    console.error('  \x1b[33mNetwork error. Check your internet connection.\x1b[0m');
+  }
+  console.error();
+  process.exit(1);
+});
 
 program.parse();

@@ -10,7 +10,7 @@ export class VertexProvider implements LLMProvider {
       projectId: options?.projectId ?? process.env.GOOGLE_CLOUD_PROJECT,
       region: options?.region ?? process.env.GOOGLE_CLOUD_LOCATION ?? 'us-east5',
     });
-    this.model = options?.model ?? 'claude-sonnet-4@20250514';
+    this.model = options?.model ?? process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4@20250514';
   }
 
   async complete(prompt: string, maxTokens: number): Promise<string> {

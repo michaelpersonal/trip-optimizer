@@ -6,7 +6,7 @@ import { createProvider } from '../llm/factory.js';
 import { runOptimizationLoop } from '../optimizer/loop.js';
 
 interface RunOptions {
-  agent?: boolean;
+  standalone?: boolean;
   safe?: boolean;
 }
 
@@ -18,20 +18,21 @@ export async function runCommand(options: RunOptions): Promise<void> {
     process.exit(1);
   }
 
-  if (options.agent) {
-    const { launchAgent } = await import('./run-agent.js');
-    await launchAgent(cwd, { safe: options.safe });
+  if (options.standalone) {
+    const config = loadConfig();
+    const provider = createProvider(config);
+
+    console.log(chalk.bold('\n  trip-optimizer: standalone mode\n'));
+
+    await runOptimizationLoop({
+      provider,
+      tripDir: cwd,
+      onIteration: () => {},
+    });
     return;
   }
 
-  const config = loadConfig();
-  const provider = createProvider(config);
-
-  console.log(chalk.bold('\n  trip-optimizer: standalone mode\n'));
-
-  await runOptimizationLoop({
-    provider,
-    tripDir: cwd,
-    onIteration: () => {}, // console output handled in loop
-  });
+  // Default: agent mode (yolo)
+  const { launchAgent } = await import('./run-agent.js');
+  await launchAgent(cwd, { safe: options.safe });
 }

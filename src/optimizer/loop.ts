@@ -72,7 +72,8 @@ export async function runOptimizationLoop(options: LoopOptions): Promise<void> {
   }
 
   let consecutiveDiscards = 0;
-  console.log('  Starting optimization loop (Ctrl+C to stop)\n');
+  console.log('  Starting optimization loop (Ctrl+C to stop)');
+  console.log(`  Score: ${currentScore.toFixed(2)}/100\n`);
 
   // Handle graceful shutdown
   let running = true;
@@ -92,6 +93,7 @@ export async function runOptimizationLoop(options: LoopOptions): Promise<void> {
 
     try {
       // Generate mutation
+      process.stdout.write(`  [${iteration}] ${mutationType} — generating mutation...`);
       const mutation = await generateMutation(
         provider,
         mutationType,
@@ -99,6 +101,7 @@ export async function runOptimizationLoop(options: LoopOptions): Promise<void> {
         constraints,
         activitiesDb,
       );
+      process.stdout.write('\r\x1b[K'); // clear line
 
       // Apply mutation
       fs.writeFileSync(planPath, mutation.newPlanContent);
@@ -111,7 +114,10 @@ export async function runOptimizationLoop(options: LoopOptions): Promise<void> {
       let scoreAfter: number;
       let verdict: string;
 
-      if (iteration % recalibrationInterval === 0) {
+      const isRecalibration = iteration % recalibrationInterval === 0;
+      process.stdout.write(`  [${iteration}] ${mutationType} — scoring (${isRecalibration ? 'absolute' : 'comparative'})...`);
+
+      if (isRecalibration) {
         // Full absolute scoring for recalibration
         const result = await scorer.scoreAbsolute(
           mutation.newPlanContent,
@@ -135,6 +141,7 @@ export async function runOptimizationLoop(options: LoopOptions): Promise<void> {
         scoreAfter = currentScore + result.composite_delta;
         verdict = result.verdict;
       }
+      process.stdout.write('\r\x1b[K'); // clear line
 
       const delta = scoreAfter - currentScore;
       const status = verdict === 'better' ? 'keep' as const : 'discard' as const;
@@ -162,9 +169,10 @@ export async function runOptimizationLoop(options: LoopOptions): Promise<void> {
       appendResult(resultsPath, log);
       onIteration?.(log);
 
-      const statusIcon = status === 'keep' ? '\u2713' : '\u2717';
-      const deltaStr = delta >= 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
-      console.log(`  [${iteration}] ${statusIcon} ${mutationType}  ${mutation.description}  ${deltaStr}`);
+      const statusIcon = status === 'keep' ? '\x1b[32m\u2713\x1b[0m' : '\x1b[31m\u2717\x1b[0m';
+      const deltaStr = delta >= 0 ? `\x1b[32m+${delta.toFixed(2)}\x1b[0m` : `\x1b[31m${delta.toFixed(2)}\x1b[0m`;
+      const scoreStr = `\x1b[1m${currentScore.toFixed(2)}\x1b[0m`;
+      console.log(`  [${iteration}] ${statusIcon} ${mutationType.padEnd(10)} ${deltaStr}  ${scoreStr}  ${mutation.description.substring(0, 60)}`);
 
     } catch (error: any) {
       console.log(`  [${iteration}] ERROR: ${error.message} -- reverting`);
