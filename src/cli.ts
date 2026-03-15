@@ -9,6 +9,9 @@ import { runCommand } from './commands/run.js';
 import { statusCommand } from './commands/status.js';
 import { debriefCommand } from './commands/debrief.js';
 import { historyCommand } from './commands/history.js';
+import { dashboardCommand } from './commands/dashboard.js';
+import { chartCommand } from './commands/chart.js';
+import { planCommand } from './commands/plan.js';
 
 const program = new Command();
 
@@ -64,5 +67,21 @@ program
   .command('history')
   .description('View past trip debriefs and learned preferences')
   .action(historyCommand);
+
+program
+  .command('dashboard')
+  .description('Live dashboard showing optimization progress')
+  .option('--watch', 'Auto-refresh every 5 seconds')
+  .action((options) => dashboardCommand(options));
+
+program
+  .command('chart')
+  .description('ASCII chart of score progression')
+  .action(chartCommand);
+
+program
+  .command('plan')
+  .description('Pretty-print the current travel plan')
+  .action(planCommand);
 
 program.parse();
