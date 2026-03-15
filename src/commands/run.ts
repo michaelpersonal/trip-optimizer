@@ -7,6 +7,7 @@ import { runOptimizationLoop } from '../optimizer/loop.js';
 
 interface RunOptions {
   standalone?: boolean;
+  headless?: boolean;
   safe?: boolean;
 }
 
@@ -32,7 +33,7 @@ export async function runCommand(options: RunOptions): Promise<void> {
     return;
   }
 
-  // Default: agent mode (yolo)
+  // Default: agent mode (interactive)
   const { launchAgent } = await import('./run-agent.js');
-  await launchAgent(cwd, { safe: options.safe });
+  await launchAgent(cwd, { safe: options.safe, headless: options.headless });
 }

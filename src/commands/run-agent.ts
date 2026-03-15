@@ -7,7 +7,7 @@ import { generateProgram } from '../generators/program.js';
 import { loadConfig } from '../data/config.js';
 import type { TripConstraints } from '../data/schemas.js';
 
-export async function launchAgent(tripDir: string, options: { safe?: boolean }): Promise<void> {
+export async function launchAgent(tripDir: string, options: { safe?: boolean; headless?: boolean }): Promise<void> {
   // 1. Check claude is available
   try {
     execSync('which claude', { stdio: 'ignore' });
@@ -32,13 +32,50 @@ export async function launchAgent(tripDir: string, options: { safe?: boolean }):
   fs.writeFileSync(programPath, programContent);
   console.log(chalk.green(`\n  Generated ${programPath}`));
 
-  // 4. Launch claude as interactive session
+  // 4. Launch claude
   const args: string[] = [];
   if (!options.safe) {
     args.push('--dangerously-skip-permissions');
   }
 
   const mode = options.safe ? 'safe mode' : 'yolo mode';
+
+  if (options.headless) {
+    // Headless: fire and forget with -p flag
+    args.push('-p', 'Read program.md and begin the optimization loop. Run until interrupted.');
+    console.log(chalk.bold(`  Launching Claude Code headless in ${mode}...\n`));
+
+    const child = spawn('claude', args, {
+      cwd: tripDir,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    child.stdout?.on('data', (data: Buffer) => {
+      process.stdout.write(data);
+    });
+
+    child.stderr?.on('data', (data: Buffer) => {
+      process.stderr.write(data);
+    });
+
+    return new Promise<void>((resolve, reject) => {
+      child.on('close', (code) => {
+        if (code === 0 || code === null) {
+          console.log(chalk.green('\n  Agent exited cleanly.\n'));
+        } else {
+          console.log(chalk.yellow(`\n  Agent exited with code ${code}.\n`));
+        }
+        resolve();
+      });
+
+      child.on('error', (err) => {
+        console.log(chalk.red(`\n  Failed to launch Claude Code: ${err.message}\n`));
+        reject(err);
+      });
+    });
+  }
+
+  // Interactive: full Claude Code session
   console.log(chalk.bold(`  Launching Claude Code in ${mode}...`));
   console.log(chalk.dim(`  program.md is ready — tell Claude to "Read program.md and start optimizing"\n`));
 

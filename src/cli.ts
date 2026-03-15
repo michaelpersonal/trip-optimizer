@@ -49,6 +49,7 @@ program
   .command('run')
   .description('Start the optimization loop (default: agent mode)')
   .option('--standalone', 'Use direct API calls instead of Claude Code agent')
+  .option('--headless', 'Run agent non-interactively (fire and forget)')
   .option('--safe', 'Use normal permissions in agent mode (no yolo)')
   .action(runCommand);
 
