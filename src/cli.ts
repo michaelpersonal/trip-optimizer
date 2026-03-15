@@ -4,6 +4,9 @@ import { initCommand } from './commands/init.js';
 import { configCommand } from './commands/config.js';
 import { profileCommand } from './commands/profile.js';
 import { scoreCommand } from './commands/score.js';
+import { researchCommand } from './commands/research.js';
+import { runCommand } from './commands/run.js';
+import { statusCommand } from './commands/status.js';
 
 const program = new Command();
 
@@ -32,5 +35,22 @@ program
   .command('score')
   .description('Run a one-off absolute score of the current plan')
   .action(scoreCommand);
+
+program
+  .command('research [city]')
+  .description('Research sprint for a specific city or all cities')
+  .action(researchCommand);
+
+program
+  .command('run')
+  .description('Start the optimization loop')
+  .option('--agent', 'Launch as Claude Code agent (yolo mode)')
+  .option('--safe', 'Use normal permissions in agent mode')
+  .action(runCommand);
+
+program
+  .command('status')
+  .description('Show current score and optimization progress')
+  .action(statusCommand);
 
 program.parse();
