@@ -24,7 +24,7 @@ export async function runAdversarialCritic(
   const prompt = buildCriticPrompt(planContent, activitiesDb, rubrics);
 
   try {
-    const response = await provider.complete(prompt, 2000);
+    const response = await provider.complete(prompt, 8000);
     const result = parseJsonResponse(response);
     if (Array.isArray(result)) return result;
     return [];

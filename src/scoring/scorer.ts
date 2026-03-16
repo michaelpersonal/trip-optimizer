@@ -76,7 +76,7 @@ export class Scorer {
   ): Promise<ComparativeScoreResult> {
     log('  Comparing plans...');
     const prompt = buildComparativePrompt(oldPlanContent, newPlanContent, mutation, rubrics);
-    const response = await this.provider.complete(prompt, 500);
+    const response = await this.provider.complete(prompt, 4000);
 
     let deltas: Record<string, number> = {};
     try {

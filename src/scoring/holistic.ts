@@ -10,7 +10,7 @@ export async function runHolisticPass(
   const prompt = buildHolisticPrompt(allScores);
 
   try {
-    const response = await provider.complete(prompt, 500);
+    const response = await provider.complete(prompt, 4000);
     const result = parseJsonResponse(response);
     if (!Array.isArray(result)) return [];
     // Clamp adjustments to +/-5

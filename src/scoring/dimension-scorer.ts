@@ -11,7 +11,7 @@ export async function scoreDimension(
 ): Promise<DimensionResult> {
   const subDimensions = dimConfig.sub_dimensions || {};
   const prompt = buildDimensionPrompt(dimName, { ...dimConfig, sub_dimensions: subDimensions }, planContent);
-  const response = await provider.complete(prompt, 800);
+  const response = await provider.complete(prompt, 4000);
   let result: any;
   try {
     result = parseJsonResponse(response);
