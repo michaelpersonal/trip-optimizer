@@ -1,5 +1,4 @@
 # trip-optimizer
-![Travel CLI screenshot](trip-optimizer.png)
 
 If you love travel like I do, you know the pain: before every trip you're deep in Google, TripAdvisor, 小红书, 携程, reading strangers' tips, comparing restaurants, checking transit schedules. You easily spend days, sometimes weeks, on research. Travel is supposed to be leisure and relaxation, not a second job.
 
@@ -52,6 +51,8 @@ trip-optimizer plan --pdf        # generate a formatted PDF itinerary
 | `history` | View past trips |
 
 ## How It Works
+
+![Travel CLI screenshot](trip-optimizer.png)
 
 Trip-optimizer follows the **autoresearch pattern**: it autonomously researches destinations, generates plan mutations, scores results, and keeps only improvements. Each optimization iteration proposes targeted changes -- swapping a restaurant, adjusting timing, adding a hidden-gem activity -- then evaluates whether the change improved the overall plan. Bad mutations are discarded; good ones accumulate.
 
