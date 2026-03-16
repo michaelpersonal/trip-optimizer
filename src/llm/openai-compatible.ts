@@ -50,8 +50,6 @@ export class OpenAICompatibleProvider implements LLMProvider {
   async complete(prompt: string, maxTokens: number): Promise<string> {
     const url = `${this.baseUrl}/chat/completions`;
 
-    // For reasoning models, disable thinking to get direct answers.
-    // This is faster, cheaper, and avoids exhausting token budgets on CoT.
     const body: Record<string, unknown> = {
       model: this.model,
       max_tokens: maxTokens,
@@ -59,49 +57,63 @@ export class OpenAICompatibleProvider implements LLMProvider {
     };
 
     if (this.reasoning) {
-      // Kimi K2.5 / DeepSeek-R1 support disabling reasoning via thinking param
       body.thinking = { type: 'disabled' };
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify(body),
+        });
 
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`${this.model} API error ${response.status}: ${body}`);
+        if (!response.ok) {
+          const respBody = await response.text();
+          // Retry on rate limit or overload
+          if ((response.status === 429 || response.status === 529) && attempt < 2) {
+            await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+            continue;
+          }
+          throw new Error(`${this.model} API error ${response.status}: ${respBody}`);
+        }
+
+        const data = await response.json() as ChatResponse;
+        const choice = data.choices?.[0];
+
+        if (!choice?.message) {
+          throw new Error(`Unexpected response from ${this.model}: no message in response`);
+        }
+
+        const { content, reasoning_content } = choice.message;
+
+        if (content) {
+          return content.trim();
+        }
+
+        if (reasoning_content) {
+          throw new Error(
+            `${this.model} exhausted token budget on reasoning (${maxTokens} tokens). ` +
+            `The model used all tokens for chain-of-thought without producing a final answer. ` +
+            `This may resolve on retry, or the prompt may be too complex for the token budget.`
+          );
+        }
+
+        throw new Error(`${this.model} returned empty response`);
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        const retryable = msg.includes('exhausted token budget') ||
+          msg.includes('timeout') || msg.includes('ECONNRESET');
+        if (retryable && attempt < 2) {
+          await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+          continue;
+        }
+        throw err;
+      }
     }
-
-    const data = await response.json() as ChatResponse;
-    const choice = data.choices?.[0];
-
-    if (!choice?.message) {
-      throw new Error(`Unexpected response from ${this.model}: no message in response`);
-    }
-
-    const { content, reasoning_content } = choice.message;
-
-    // For reasoning models: content has the final answer, reasoning_content has the CoT.
-    // If content is empty but reasoning exists, the model ran out of tokens during reasoning.
-    if (content) {
-      return content.trim();
-    }
-
-    if (reasoning_content) {
-      // Model exhausted tokens on reasoning — try to extract any useful content
-      // from the end of the reasoning (sometimes the answer starts forming there)
-      throw new Error(
-        `${this.model} exhausted token budget on reasoning (${effectiveMaxTokens} tokens). ` +
-        `The model used all tokens for chain-of-thought without producing a final answer. ` +
-        `This may resolve on retry, or the prompt may be too complex for the token budget.`
-      );
-    }
-
-    throw new Error(`${this.model} returned empty response`);
+    throw new Error('Unreachable');
   }
 }
