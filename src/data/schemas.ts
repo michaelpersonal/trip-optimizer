@@ -11,6 +11,7 @@ export interface TripConstraints {
   cities: Array<{
     name: string;
     key: string;
+    role: 'destination' | 'transit';
     min_days: number;
     max_days: number;
   }>;

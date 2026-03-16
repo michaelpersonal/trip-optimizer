@@ -54,11 +54,22 @@ async function collectAnswers(name: string, profile: Profile): Promise<InitAnswe
     validate: (v) => v.includes(',') || v.length > 0 || t('trip.cities_validate'),
   });
 
-  const cities = citiesRaw.split(',').map(c => {
+  let cities = citiesRaw.split(',').map(c => {
     const trimmed = c.trim();
     const key = trimmed.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    return { name: trimmed, key };
+    return { name: trimmed, key, role: 'destination' as const };
   });
+
+  if (cities.length > 1) {
+    const transitCities = await checkbox({
+      message: t('trip.transit_cities'),
+      choices: cities.map(c => ({ value: c.key, name: c.name })),
+    });
+    cities = cities.map(c => ({
+      ...c,
+      role: transitCities.includes(c.key) ? 'transit' as const : 'destination' as const,
+    }));
+  }
 
   const budgetTotal = await input({ message: t('trip.budget'), default: '5000' });
 
@@ -122,7 +133,7 @@ async function editAnswers(name: string, existing: TripConstraints, profile: Pro
   let endDate = existing.trip.end_date;
   let travelers = existing.trip.travelers;
   let origin = existing.trip.origin;
-  let cities = existing.cities.map(c => ({ name: c.name, key: c.key }));
+  let cities = existing.cities.map(c => ({ name: c.name, key: c.key, role: (c.role || 'destination') as 'destination' | 'transit' }));
   let budgetTotal = existing.budget?.total || 5000;
   let vibes = existing.preferences.priority_order;
   let antiPatterns = existing.preferences.anti_patterns;
@@ -160,8 +171,18 @@ async function editAnswers(name: string, existing: TripConstraints, profile: Pro
       cities = citiesRaw.split(',').map(c => {
         const trimmed = c.trim();
         const key = trimmed.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        return { name: trimmed, key };
+        return { name: trimmed, key, role: 'destination' as const };
       });
+      if (cities.length > 1) {
+        const transitCities = await checkbox({
+          message: t('trip.transit_cities'),
+          choices: cities.map(c => ({ value: c.key, name: c.name })),
+        });
+        cities = cities.map(c => ({
+          ...c,
+          role: transitCities.includes(c.key) ? 'transit' as const : 'destination' as const,
+        }));
+      }
     }
     if (fieldsToEdit.includes('budget')) {
       const val = await input({ message: t('trip.budget'), default: String(budgetTotal) });

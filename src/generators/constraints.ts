@@ -7,7 +7,7 @@ export interface InitAnswers {
   end_date: string;
   travelers: number;
   origin: string;
-  cities: Array<{ name: string; key: string }>;
+  cities: Array<{ name: string; key: string; role: 'destination' | 'transit' }>;
   budget_total: number;
   budget_currency: string;
   vibes: string[];
@@ -20,7 +20,8 @@ export function generateConstraints(answers: InitAnswers): string {
   const startDate = new Date(answers.start_date);
   const endDate = new Date(answers.end_date);
   const totalDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-  const daysPerCity = Math.max(1, Math.floor(totalDays / answers.cities.length));
+  const destinationCount = answers.cities.filter(c => c.role === 'destination').length || 1;
+  const daysPerCity = Math.max(1, Math.floor(totalDays / destinationCount));
 
   const constraints: TripConstraints = {
     trip: {
@@ -34,8 +35,9 @@ export function generateConstraints(answers: InitAnswers): string {
     cities: answers.cities.map(c => ({
       name: c.name,
       key: c.key,
-      min_days: 1,
-      max_days: Math.min(daysPerCity + 2, totalDays),
+      role: c.role,
+      min_days: c.role === 'transit' ? 0 : 1,
+      max_days: c.role === 'transit' ? 1 : Math.min(daysPerCity + 2, totalDays),
     })),
     hard_requirements: ['City ordering cannot change'],
     preferences: {

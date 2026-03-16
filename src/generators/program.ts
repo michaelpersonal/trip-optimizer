@@ -77,7 +77,7 @@ ${hasSearchApi ? `2. **Web search API** (configured):
 
 ## Phase 1: Research Sprint
 
-Before mutating anything, build knowledge. For each city in the plan:
+Before mutating anything, build knowledge. For each **destination** city in the plan (skip transit-only cities):
 
 ${researchSources}
 
@@ -117,6 +117,7 @@ LOOP FOREVER:
 - **Respect geographic clustering.** Don't zigzag across the city.
 - **Respect day bounds.** When reallocating days, stay within min/max in constraints.yaml.
 - **Transit days are partial days.** A day with 5+ hours transit should not have full activities.
+- **Transit-only cities** (role: "transit") need only arrival/departure logistics — no sightseeing, no restaurant research, no hotel optimization.
 - **Research when stuck.** If 5+ consecutive discards, trigger a RESEARCH mutation.
 
 ## What You CANNOT Do

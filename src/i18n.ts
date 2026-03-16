@@ -36,6 +36,7 @@ const messages = {
   'trip.cities_validate': { en: 'Enter at least one city', zh: '请至少输入一个城市' },
   'trip.budget': { en: 'Total budget (USD):', zh: '总预算（USD）：' },
   'trip.vibes': { en: 'Pick your vibes (Space to select, Enter to confirm):', zh: '选择旅行风格（空格选择，回车确认）：' },
+  'trip.transit_cities': { en: 'Any of these cities just a transit/layover? (Space to select, Enter to confirm):', zh: '以下城市中有哪些只是中转/经停？（空格选择，回车确认）：' },
   'trip.anti_patterns': { en: 'Anything to avoid? (comma-separated, or press Enter to skip):', zh: '有什么要避免的？（逗号分隔，或按回车跳过）：' },
 
   // Vibe choices

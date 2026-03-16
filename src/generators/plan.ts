@@ -15,7 +15,7 @@ Name: ${constraints.trip.name}
 Dates: ${constraints.trip.start_date} to ${constraints.trip.end_date} (${constraints.trip.total_days} days)
 Travelers: ${constraints.trip.travelers}
 Origin: ${constraints.trip.origin}
-Cities (in order): ${constraints.cities.map(c => `${c.name} (${c.min_days}-${c.max_days} days)`).join(' → ')}
+Cities (in order): ${constraints.cities.map(c => `${c.name} (${c.role === 'transit' ? 'TRANSIT ONLY — no sightseeing, just logistics' : `${c.min_days}-${c.max_days} days`})`).join(' → ')}
 Budget: ${constraints.budget.currency} ${constraints.budget.total} total
 Preferences: ${constraints.preferences.priority_order.join(', ')}
 Anti-patterns to avoid: ${constraints.preferences.anti_patterns.join(', ')}
