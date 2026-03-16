@@ -303,9 +303,15 @@ function renderTable(doc: PDFKit.PDFDocument, lines: string[], startIdx: number)
   if (rows.length === 0) return i;
 
   const colCount = rows[0].length;
-  const col1Width = CONTENT_W * 0.62;
-  const col2Width = CONTENT_W * 0.38;
-  const colWidths = colCount === 2 ? [col1Width, col2Width] : Array(colCount).fill(CONTENT_W / colCount);
+  let colWidths: number[];
+  if (colCount === 2) {
+    colWidths = [CONTENT_W * 0.62, CONTENT_W * 0.38];
+  } else if (colCount === 7) {
+    // Summary table: Day, Date, DoW, Location, Hotel, Flight/Train, Notes
+    colWidths = [0.05, 0.08, 0.05, 0.20, 0.18, 0.16, 0.28].map(w => CONTENT_W * w);
+  } else {
+    colWidths = Array(colCount).fill(CONTENT_W / colCount);
+  }
   const rowHeight = 20;
 
   ensureSpace(doc, Math.min(rows.length + 1, 6) * rowHeight);
@@ -316,10 +322,11 @@ function renderTable(doc: PDFKit.PDFDocument, lines: string[], startIdx: number)
   // Header row
   if (rows.length > 0) {
     doc.rect(startX, y, CONTENT_W, rowHeight).fill('#e8e8e8');
-    doc.font('Helvetica-Bold').fontSize(9).fillColor('#2d3436');
+    const fontSize = colCount >= 6 ? 7.5 : 9;
+    doc.font('Helvetica-Bold').fontSize(fontSize).fillColor('#2d3436');
     let x = startX;
     for (let c = 0; c < rows[0].length && c < colWidths.length; c++) {
-      doc.text(rows[0][c], x + 5, y + 5, { width: colWidths[c] - 10, lineBreak: false });
+      doc.text(rows[0][c], x + 3, y + 5, { width: colWidths[c] - 6, lineBreak: false });
       x += colWidths[c];
     }
     y += rowHeight;
@@ -338,10 +345,11 @@ function renderTable(doc: PDFKit.PDFDocument, lines: string[], startIdx: number)
       doc.rect(startX, y, CONTENT_W, rowHeight).fill('#f5f5f5');
     }
     const isTotalRow = rows[r][0]?.toLowerCase().includes('total');
-    doc.font(isTotalRow ? 'Helvetica-Bold' : 'Helvetica').fontSize(9).fillColor('#333333');
+    const dataFontSize = colCount >= 6 ? 7.5 : 9;
+    doc.font(isTotalRow ? 'Helvetica-Bold' : 'Helvetica').fontSize(dataFontSize).fillColor('#333333');
     let x = startX;
     for (let c = 0; c < rows[r].length && c < colWidths.length; c++) {
-      doc.text(rows[r][c], x + 5, y + 5, { width: colWidths[c] - 10, lineBreak: false });
+      doc.text(rows[r][c], x + 3, y + 5, { width: colWidths[c] - 6, lineBreak: false });
       x += colWidths[c];
     }
     y += rowHeight;

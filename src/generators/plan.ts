@@ -24,7 +24,8 @@ Hotel loyalty: ${constraints.loyalty_program || 'none'}
 
 ## Requirements
 - Start with YAML frontmatter containing trip metadata
-- Each day should have: morning activity, lunch, afternoon activity, dinner, evening
+- IMMEDIATELY after the frontmatter, include a **Summary Table** (see format below)
+- Then each day should have: morning activity, lunch, afternoon activity, dinner, evening
 - Include specific restaurant recommendations (not generic "local restaurant")
 - Include transit details between cities (transport mode, approximate time)
 - Include hotel recommendations
@@ -38,6 +39,14 @@ total_days: ${constraints.trip.total_days}
 start_date: ${constraints.trip.start_date}
 end_date: ${constraints.trip.end_date}
 ---
+
+## Schedule Overview
+
+| Day | Date | DoW | Location | Hotel | Flight/Train | Notes |
+|-----|------|-----|----------|-------|--------------|-------|
+| 1 | May 28 | Thu | NRT → Shanghai | — | NH919 14:00 | Arrive, evening flight |
+| 2 | May 29 | Fri | Shanghai | Le Méridien | — | Full day |
+| ... | ... | ... | ... | ... | ... | ... |
 
 # Day 1: [City] — [Theme]
 ## Morning
@@ -54,7 +63,7 @@ end_date: ${constraints.trip.end_date}
 **Hotel:** [Name]
 **Transit:** [if applicable]
 
-Generate the complete itinerary now.${langInstruction}`;
+Generate the complete itinerary now. The summary table must cover ALL ${constraints.trip.total_days} days with correct dates and days of week starting from ${constraints.trip.start_date}.${langInstruction}`;
 
   return await provider.complete(prompt, 8000);
 }
