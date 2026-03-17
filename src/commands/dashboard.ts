@@ -19,8 +19,8 @@ function trendArrow(current: number, previous: number): string {
   return chalk.gray('\u2192');
 }
 
-function renderDashboard(): void {
-  const cwd = process.cwd();
+function renderDashboard(tripDir?: string): void {
+  const cwd = tripDir || process.cwd();
 
   if (!fs.existsSync(path.join(cwd, 'constraints.yaml'))) {
     console.log(chalk.red('\n  Not in a trip project directory.\n'));
@@ -133,15 +133,24 @@ function renderDashboard(): void {
 }
 
 export function dashboardCommand(options: { watch?: boolean }): void {
+  // Capture cwd once at startup — git resets during optimization can delete the directory
+  const tripDir = process.cwd();
+
   if (options.watch) {
     const render = (): void => {
-      process.stdout.write('\x1B[2J\x1B[0f'); // clear terminal
-      renderDashboard();
-      console.log(chalk.gray('  Auto-refreshing every 5s. Press Ctrl+C to stop.'));
+      try {
+        process.stdout.write('\x1B[2J\x1B[0f'); // clear terminal
+        renderDashboard(tripDir);
+        console.log(chalk.gray('  Auto-refreshing every 5s. Press Ctrl+C to stop.'));
+      } catch (err: any) {
+        // Directory may be temporarily gone during git reset
+        process.stdout.write('\x1B[2J\x1B[0f');
+        console.log(chalk.yellow('\n  Waiting for optimizer... (directory in flux)\n'));
+      }
     };
     render();
     setInterval(render, 5000);
   } else {
-    renderDashboard();
+    renderDashboard(tripDir);
   }
 }
