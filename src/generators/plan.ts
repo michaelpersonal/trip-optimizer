@@ -21,6 +21,9 @@ Preferences: ${constraints.preferences.priority_order.join(', ')}
 Anti-patterns to avoid: ${constraints.preferences.anti_patterns.join(', ')}
 Dietary: ${constraints.dietary.length > 0 ? constraints.dietary.join(', ') : 'none'}
 Hotel loyalty: ${constraints.loyalty_program || 'none'}
+${constraints.must_visit?.length > 0 ? `Must-visit: ${constraints.must_visit.join(', ')}` : ''}
+${constraints.hard_constraints?.length > 0 ? `Constraints: ${constraints.hard_constraints.join('. ')}` : ''}
+${constraints.user_notes ? `Travel style notes: ${constraints.user_notes}` : ''}
 
 ## Requirements
 - Start with YAML frontmatter containing trip metadata

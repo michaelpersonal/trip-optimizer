@@ -120,6 +120,11 @@ LOOP FOREVER:
 - **Transit-only cities** (role: "transit") need only arrival/departure logistics — no sightseeing, no restaurant research, no hotel optimization.
 - **Research when stuck.** If 5+ consecutive discards, trigger a RESEARCH mutation.
 
+## User Preferences (DO NOT violate)
+${constraints.must_visit?.length > 0 ? `\nMust include:\n${constraints.must_visit.map(m => `- ${m}`).join('\n')}` : ''}
+${constraints.hard_constraints?.length > 0 ? `\nConstraints:\n${constraints.hard_constraints.map(c => `- ${c}`).join('\n')}` : ''}
+${constraints.user_notes ? `\nTravel style:\n${constraints.user_notes}` : ''}
+
 ## What You CANNOT Do
 
 - Add or remove cities from the route

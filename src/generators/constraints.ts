@@ -12,6 +12,9 @@ export interface InitAnswers {
   budget_currency: string;
   vibes: string[];
   anti_patterns: string[];
+  must_visit: string[];
+  hard_constraints: string[];
+  user_notes: string;
   dietary: string[];
   loyalty_program: string;
 }
@@ -40,6 +43,9 @@ export function generateConstraints(answers: InitAnswers): string {
       max_days: c.role === 'transit' ? 1 : Math.min(daysPerCity + 2, totalDays),
     })),
     hard_requirements: ['City ordering cannot change'],
+    must_visit: answers.must_visit.length > 0 ? answers.must_visit : [],
+    hard_constraints: answers.hard_constraints.length > 0 ? answers.hard_constraints : [],
+    user_notes: answers.user_notes || '',
     preferences: {
       priority_order: answers.vibes,
       anti_patterns: answers.anti_patterns.length > 0 ? answers.anti_patterns : ['tourist traps', 'long queues'],

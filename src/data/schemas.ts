@@ -16,6 +16,9 @@ export interface TripConstraints {
     max_days: number;
   }>;
   hard_requirements: string[];
+  must_visit: string[];
+  hard_constraints: string[];
+  user_notes: string;
   preferences: {
     priority_order: string[];
     anti_patterns: string[];

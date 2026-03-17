@@ -14,7 +14,48 @@ import { generateRubrics } from '../generators/rubrics.js';
 import { generatePlan } from '../generators/plan.js';
 import { generateProgram } from '../generators/program.js';
 import type { TripConstraints } from '../data/schemas.js';
-import { t, setLanguage, getLanguage, type Language } from '../i18n.js';
+import { t, setLanguage, getLanguage, getLlmLanguageInstruction, type Language } from '../i18n.js';
+import { parseJsonResponse } from '../llm/json-parser.js';
+import type { InitAnswers } from '../generators/constraints.js';
+
+function buildInterviewPrompt(answers: InitAnswers): string {
+  const langInstruction = getLlmLanguageInstruction();
+  const citiesList = answers.cities.map(c =>
+    `${c.name} (${c.role === 'transit' ? 'transit only' : 'destination'})`
+  ).join(', ');
+
+  return `You are a travel planning assistant conducting a brief interview.
+Based on the trip details below, generate 3-5 follow-up questions
+to understand this traveler's preferences better.
+
+Ask about things the structured data DOESN'T capture:
+- Pace and energy level (packed days vs lazy mornings?)
+- Food specifics (street food vs fine dining? adventurous eater?)
+- Travel style (plan every minute vs leave room for spontaneity?)
+- Group dynamics (different interests among travelers?)
+- Specific experiences they're dreaming of
+- Things that would ruin the trip
+
+Do NOT ask about things already answered (dates, cities, budget, must-visit, constraints).
+Do NOT ask more than 5 questions.
+Each question should be 1 sentence, conversational tone.
+
+## Trip Details
+Name: ${answers.name}
+Dates: ${answers.start_date} to ${answers.end_date}
+Travelers: ${answers.travelers}
+Origin: ${answers.origin}
+Cities: ${citiesList}
+Budget: ${answers.budget_currency} ${answers.budget_total}
+Vibes: ${answers.vibes.join(', ')}
+Anti-patterns: ${answers.anti_patterns.join(', ') || 'none'}
+Must-visit: ${answers.must_visit.join(', ') || 'none'}
+Constraints: ${answers.hard_constraints.join('. ') || 'none'}
+Dietary: ${answers.dietary.join(', ') || 'none'}
+
+Return a JSON array of question strings, nothing else:
+["question 1", "question 2", ...]${langInstruction}`;
+}
 
 function loadExisting(name: string): TripConstraints | null {
   const tripDirName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -87,6 +128,17 @@ async function collectAnswers(name: string, profile: Profile): Promise<InitAnswe
     ? antiPatternsRaw.split(',').map(s => s.trim()).filter(Boolean)
     : [];
 
+  // === Step A: Must-visit and hard constraints (free text) ===
+  const mustVisitRaw = await input({ message: t('trip.must_visit') });
+  const mustVisit = mustVisitRaw
+    ? mustVisitRaw.split(',').map(s => s.trim()).filter(Boolean)
+    : [];
+
+  const hardConstraintsRaw = await input({ message: t('trip.hard_constraints') });
+  const hardConstraints = hardConstraintsRaw
+    ? hardConstraintsRaw.split(/[.;\n]/).map(s => s.trim()).filter(Boolean)
+    : [];
+
   return {
     name,
     start_date: startDate,
@@ -98,6 +150,9 @@ async function collectAnswers(name: string, profile: Profile): Promise<InitAnswe
     budget_currency: 'USD',
     vibes,
     anti_patterns: antiPatterns,
+    must_visit: mustVisit,
+    hard_constraints: hardConstraints,
+    user_notes: '',  // filled in by LLM interview in initCommand
     dietary: profile.dietary,
     loyalty_program: profile.loyalty_program,
   };
@@ -214,6 +269,9 @@ async function editAnswers(name: string, existing: TripConstraints, profile: Pro
     budget_currency: 'USD',
     vibes,
     anti_patterns: antiPatterns,
+    must_visit: existing.must_visit || [],
+    hard_constraints: existing.hard_constraints || [],
+    user_notes: existing.user_notes || '',
     dietary: profile.dietary,
     loyalty_program: profile.loyalty_program,
   };
@@ -392,7 +450,42 @@ export async function initCommand(name: string): Promise<void> {
     answers = await collectAnswers(name, profile);
   }
 
-  // === Step 5: Generate ===
+  // === Step 5: LLM follow-up interview ===
+  let provider;
+  try {
+    provider = createProvider(config);
+  } catch (err) {
+    console.log(chalk.red(`\n  ${t('error.provider_fail')}: ${err instanceof Error ? err.message : String(err)}\n`));
+    process.exit(1);
+  }
+
+  if (!existing) {
+    const interviewSpinner = ora(t('trip.interview_generating')).start();
+    try {
+      const interviewPrompt = buildInterviewPrompt(answers);
+      const questionsRaw = await provider.complete(interviewPrompt, 2000);
+      const questions = parseJsonResponse(questionsRaw);
+      interviewSpinner.succeed(t('trip.interview_intro'));
+
+      if (Array.isArray(questions) && questions.length > 0) {
+        const interviewAnswers: string[] = [];
+        for (const q of questions.slice(0, 5)) {
+          if (typeof q !== 'string') continue;
+          const answer = await input({ message: q });
+          if (answer.trim()) {
+            interviewAnswers.push(`Q: ${q}\nA: ${answer.trim()}`);
+          }
+        }
+        if (interviewAnswers.length > 0) {
+          answers.user_notes = interviewAnswers.join('\n\n');
+        }
+      }
+    } catch {
+      interviewSpinner.warn('Follow-up questions skipped (LLM unavailable)');
+    }
+  }
+
+  // === Step 6: Generate ===
   const constraintsYaml = generateConstraints(answers);
   const constraints = yaml.load(constraintsYaml) as TripConstraints;
 
@@ -400,14 +493,6 @@ export async function initCommand(name: string): Promise<void> {
   const learnedPath = getLearnedPath();
   if (fs.existsSync(learnedPath)) {
     learnedSignals = fs.readFileSync(learnedPath, 'utf-8');
-  }
-
-  let provider;
-  try {
-    provider = createProvider(config);
-  } catch (err) {
-    console.log(chalk.red(`\n  ${t('error.provider_fail')}: ${err instanceof Error ? err.message : String(err)}\n`));
-    process.exit(1);
   }
 
   const spinner = ora(t('progress.generating_rubrics')).start();

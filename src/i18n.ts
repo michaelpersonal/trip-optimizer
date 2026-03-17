@@ -38,6 +38,10 @@ const messages = {
   'trip.vibes': { en: 'Pick your vibes (Space to select, Enter to confirm):', zh: '选择旅行风格（空格选择，回车确认）：' },
   'trip.transit_cities': { en: 'Any of these cities just a transit/layover? (Space to select, Enter to confirm):', zh: '以下城市中有哪些只是中转/经停？（空格选择，回车确认）：' },
   'trip.anti_patterns': { en: 'Anything to avoid? (comma-separated, or press Enter to skip):', zh: '有什么要避免的？（逗号分隔，或按回车跳过）：' },
+  'trip.must_visit': { en: 'Any must-visit places or activities? (comma-separated, Enter to skip):', zh: '有必去的地方或活动吗？（逗号分隔，按回车跳过）：' },
+  'trip.hard_constraints': { en: 'Any constraints or special circumstances? (Enter to skip):', zh: '有什么特殊限制或情况吗？（按回车跳过）：' },
+  'trip.interview_generating': { en: 'Generating follow-up questions...', zh: '正在生成后续问题...' },
+  'trip.interview_intro': { en: 'A few quick questions to understand your travel style:', zh: '几个小问题，帮助我们了解您的旅行风格：' },
 
   // Vibe choices
   'vibe.wandering': { en: 'Wandering & exploring', zh: '漫步探索' },

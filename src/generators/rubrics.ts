@@ -114,7 +114,10 @@ Budget: ${constraints.budget.currency} ${constraints.budget.total}
 Vibes: ${constraints.preferences.priority_order.join(', ')}
 Anti-patterns: ${constraints.preferences.anti_patterns.join(', ')}
 Dietary: ${constraints.dietary.length > 0 ? constraints.dietary.join(', ') : 'none'}
-Loyalty program: ${constraints.loyalty_program || 'none'}`;
+Loyalty program: ${constraints.loyalty_program || 'none'}
+${constraints.must_visit?.length > 0 ? `Must-visit: ${constraints.must_visit.join(', ')}` : ''}
+${constraints.hard_constraints?.length > 0 ? `Constraints: ${constraints.hard_constraints.join('. ')}` : ''}
+${constraints.user_notes ? `User notes: ${constraints.user_notes}` : ''}`;
 
   const learnedSection = learnedSignals
     ? `\n## Learned Preferences from Past Trips\n${learnedSignals}\n`
