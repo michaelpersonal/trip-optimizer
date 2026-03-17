@@ -73,7 +73,7 @@ export async function generateMutation(
   lastScoreNotes?: string,
 ): Promise<MutationResult> {
   const prompt = buildMutationPrompt(type, planContent, constraints, activitiesDb, lastScoreNotes);
-  const response = await provider.complete(prompt, 10000);
+  const response = await provider.complete(prompt, 32000);
 
   // Parse the response — try JSON first, fall back to extracting fields
   let parsed: any;

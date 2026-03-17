@@ -68,5 +68,5 @@ end_date: ${constraints.trip.end_date}
 
 Generate the complete itinerary now. The summary table must cover ALL ${constraints.trip.total_days} days with correct dates and days of week starting from ${constraints.trip.start_date}.${langInstruction}`;
 
-  return await provider.complete(prompt, 8000);
+  return await provider.complete(prompt, 32000);
 }
