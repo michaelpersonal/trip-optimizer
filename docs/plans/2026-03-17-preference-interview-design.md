@@ -121,6 +121,26 @@ The optimizer sees this on every iteration so it won't mutate away must-visit it
 
 No direct changes needed. The rubric generator adapts dimensions based on the full constraints, and the adversarial critic already checks against `constraints.yaml`.
 
+## TODO: Practical Prep Guide (not yet implemented)
+
+Generate a `prep.md` file during init covering destination-specific practical logistics. No new data structures needed — just a well-crafted prompt that asks the LLM to cover:
+
+1. Entry requirements — visa, passport, vaccinations
+2. Payment systems — WeChat Pay/Alipay (China), IC cards (Japan), etc.
+3. Connectivity — VPN needs, SIM/eSIM, blocked apps
+4. Local transport apps — 12306 (China), Hyperdia (Japan), Citymapper, etc.
+5. Cultural norms — do's and don'ts, dining etiquette, tipping
+6. Safety — scams, pickpockets, safe areas
+7. Pre-trip timeline — what to book when (e.g., 12306 opens 15 days ahead)
+8. Packing checklist — climate and activity specific
+
+The LLM already knows all this from training data (e.g., it generated "Malpensa Express, 50 min, 13 EUR, avoid taxi touts" for an Italy trip without being told). We just need to prompt it to surface that knowledge consistently.
+
+Also add a nudge to the plan generator prompt: "Include destination-specific practical details: local payment methods, booking platforms, transit apps, connectivity needs."
+
+Inspired by the travel-planner skill's "Essential Research" checklist:
+https://skills.sh/ailabs-393/ai-labs-claude-skills/travel-planner
+
 ## Files to Modify
 
 - `src/data/schemas.ts` — add `must_visit`, `hard_constraints`, `user_notes` to `TripConstraints`
