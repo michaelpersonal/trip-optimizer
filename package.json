@@ -1,6 +1,6 @@
 {
   "name": "trip-optimizer",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "description": "Autonomously optimize travel plans using the autoresearch pattern",
   "type": "module",
   "bin": {

@@ -1,8 +1,39 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import chalk from 'chalk';
 import PDFDocument from 'pdfkit';
 import yaml from 'js-yaml';
+
+const CJK_REGEX = /[\u4E00-\u9FFF\u3400-\u4DBF]/;
+const FONT_URL = 'https://github.com/google/fonts/raw/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf';
+
+function hasCJK(text: string): boolean {
+  return CJK_REGEX.test(text);
+}
+
+function getCJKFontPath(): string {
+  const cacheDir = path.join(os.homedir(), '.trip-optimizer', 'fonts');
+  return path.join(cacheDir, 'NotoSansSC.ttf');
+}
+
+async function ensureCJKFont(): Promise<string> {
+  const fontPath = getCJKFontPath();
+  if (fs.existsSync(fontPath)) return fontPath;
+
+  const cacheDir = path.dirname(fontPath);
+  fs.mkdirSync(cacheDir, { recursive: true });
+
+  console.log(chalk.cyan('  Downloading CJK font for Chinese PDF support...'));
+  const response = await fetch(FONT_URL);
+  if (!response.ok) {
+    throw new Error(`Failed to download CJK font: ${response.status}`);
+  }
+  const buffer = Buffer.from(await response.arrayBuffer());
+  fs.writeFileSync(fontPath, buffer);
+  console.log(chalk.green(`  Font cached at ${fontPath} (${(buffer.length / 1024 / 1024).toFixed(1)} MB)`));
+  return fontPath;
+}
 
 interface PlanOptions {
   pdf?: boolean;
@@ -21,7 +52,7 @@ interface Frontmatter {
   loyalty_program?: string;
 }
 
-export function planCommand(options: PlanOptions = {}): void {
+export async function planCommand(options: PlanOptions = {}): Promise<void> {
   const cwd = process.cwd();
   const planPath = path.join(cwd, 'plan.md');
 
@@ -34,7 +65,7 @@ export function planCommand(options: PlanOptions = {}): void {
 
   if (options.pdf) {
     const outputPath = options.output || path.join(cwd, 'plan.pdf');
-    generatePdf(content, outputPath);
+    await generatePdf(content, outputPath);
     console.log(chalk.green(`\n  PDF saved to ${outputPath}\n`));
     return;
   }
@@ -83,13 +114,27 @@ function ensureSpace(doc: PDFKit.PDFDocument, needed: number): void {
   }
 }
 
-function generatePdf(markdown: string, outputPath: string): void {
+// Font mapping: when CJK is needed, use CJK font for everything (it covers Latin too)
+let useCJK = false;
+function fontRegular(): string { return useCJK ? 'CJK' : 'Helvetica'; }
+function fontBold(): string { return useCJK ? 'CJK' : 'Helvetica-Bold'; }
+function fontItalic(): string { return useCJK ? 'CJK' : 'Helvetica-Oblique'; }
+
+async function generatePdf(markdown: string, outputPath: string): Promise<void> {
   const { frontmatter, body } = parseFrontmatter(markdown);
+  const needsCJK = hasCJK(markdown);
+  useCJK = needsCJK;
 
   const doc = new PDFDocument({
     size: 'LETTER',
     margins: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN },
   });
+
+  // Register CJK font if needed
+  if (needsCJK) {
+    const fontPath = await ensureCJKFont();
+    doc.registerFont('CJK', fontPath);
+  }
 
   const stream = fs.createWriteStream(outputPath);
   doc.pipe(stream);
@@ -123,7 +168,7 @@ function generatePdf(markdown: string, outputPath: string): void {
     if (/^#{1,2}\s+Day\s+\d+/i.test(trimmed)) {
       doc.addPage();
       const headerText = stripEmoji(trimmed.replace(/^#{1,2}\s+/, ''));
-      doc.font('Helvetica-Bold').fontSize(18).fillColor('#1a1a2e')
+      doc.font(fontBold()).fontSize(18).fillColor('#1a1a2e')
         .text(headerText, MARGIN, MARGIN, { width: CONTENT_W });
       // Blue underline
       const y = doc.y + 2;
@@ -135,7 +180,7 @@ function generatePdf(markdown: string, outputPath: string): void {
       // Check for theme line (next line starting with *)
       if (i < lines.length && /^\s*\*[^*]+\*\s*$/.test(lines[i].trim())) {
         const theme = lines[i].trim().replace(/^\*|\*$/g, '');
-        doc.font('Helvetica-Oblique').fontSize(10).fillColor('#636e72')
+        doc.font(fontItalic()).fontSize(10).fillColor('#636e72')
           .text(theme, MARGIN, undefined, { width: CONTENT_W });
         doc.moveDown(0.5);
         i++;
@@ -148,7 +193,7 @@ function generatePdf(markdown: string, outputPath: string): void {
       ensureSpace(doc, 40);
       doc.moveDown(0.5);
       const title = stripEmoji(trimmed.replace(/^# /, ''));
-      doc.font('Helvetica-Bold').fontSize(16).fillColor('#1a1a2e')
+      doc.font(fontBold()).fontSize(16).fillColor('#1a1a2e')
         .text(title, MARGIN, undefined, { width: CONTENT_W });
       const y = doc.y + 1;
       doc.moveTo(MARGIN, y).lineTo(MARGIN + CONTENT_W, y)
@@ -164,7 +209,7 @@ function generatePdf(markdown: string, outputPath: string): void {
       ensureSpace(doc, 30);
       doc.moveDown(0.4);
       const heading = stripEmoji(trimmed.replace(/^#{2,3}\s+/, ''));
-      doc.font('Helvetica-Bold').fontSize(12).fillColor('#2d3436')
+      doc.font(fontBold()).fontSize(12).fillColor('#2d3436')
         .text(heading, MARGIN, undefined, { width: CONTENT_W });
       doc.moveDown(0.2);
       i++;
@@ -181,7 +226,7 @@ function generatePdf(markdown: string, outputPath: string): void {
     if (/^\*[^*]+\*$/.test(trimmed)) {
       ensureSpace(doc, 16);
       const text = stripEmoji(trimmed.replace(/^\*|\*$/g, ''));
-      doc.font('Helvetica-Oblique').fontSize(10).fillColor('#636e72')
+      doc.font(fontItalic()).fontSize(10).fillColor('#636e72')
         .text(text, MARGIN, undefined, { width: CONTENT_W });
       doc.moveDown(0.2);
       i++;
@@ -224,6 +269,10 @@ function generatePdf(markdown: string, outputPath: string): void {
   }
 
   doc.end();
+  await new Promise<void>((resolve, reject) => {
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+  });
 }
 
 function renderCoverPage(doc: PDFKit.PDFDocument, fm: Frontmatter): void {
@@ -231,7 +280,7 @@ function renderCoverPage(doc: PDFKit.PDFDocument, fm: Frontmatter): void {
 
   // Trip name — large centered
   const name = (fm.trip_name || 'Travel Plan').toUpperCase();
-  doc.font('Helvetica-Bold').fontSize(32).fillColor('#1a1a2e');
+  doc.font(fontBold()).fontSize(32).fillColor('#1a1a2e');
   doc.text(name, MARGIN, 220, { width: CONTENT_W, align: 'center' });
 
   // Decorative line
@@ -244,7 +293,7 @@ function renderCoverPage(doc: PDFKit.PDFDocument, fm: Frontmatter): void {
   doc.moveDown(1);
 
   // Details
-  doc.font('Helvetica').fontSize(13).fillColor('#555555');
+  doc.font(fontRegular()).fontSize(13).fillColor('#555555');
   const details: string[] = [];
   if (fm.start_date && fm.end_date) {
     const fmtDate = (d: string | Date) => {
@@ -274,7 +323,7 @@ function renderCoverPage(doc: PDFKit.PDFDocument, fm: Frontmatter): void {
   }
 
   // Footer
-  doc.font('Helvetica-Oblique').fontSize(9).fillColor('#999999');
+  doc.font(fontItalic()).fontSize(9).fillColor('#999999');
   doc.text('Generated by trip-optimizer', MARGIN, PAGE_H - MARGIN - 30, {
     width: CONTENT_W,
     align: 'center',
@@ -323,7 +372,7 @@ function renderTable(doc: PDFKit.PDFDocument, lines: string[], startIdx: number)
   if (rows.length > 0) {
     doc.rect(startX, y, CONTENT_W, rowHeight).fill('#e8e8e8');
     const fontSize = colCount >= 6 ? 7.5 : 9;
-    doc.font('Helvetica-Bold').fontSize(fontSize).fillColor('#2d3436');
+    doc.font(fontBold()).fontSize(fontSize).fillColor('#2d3436');
     let x = startX;
     for (let c = 0; c < rows[0].length && c < colWidths.length; c++) {
       doc.text(rows[0][c], x + 3, y + 5, { width: colWidths[c] - 6, lineBreak: false });
@@ -346,7 +395,7 @@ function renderTable(doc: PDFKit.PDFDocument, lines: string[], startIdx: number)
     }
     const isTotalRow = rows[r][0]?.toLowerCase().includes('total');
     const dataFontSize = colCount >= 6 ? 7.5 : 9;
-    doc.font(isTotalRow ? 'Helvetica-Bold' : 'Helvetica').fontSize(dataFontSize).fillColor('#333333');
+    doc.font(isTotalRow ? fontBold() : fontRegular()).fontSize(dataFontSize).fillColor('#333333');
     let x = startX;
     for (let c = 0; c < rows[r].length && c < colWidths.length; c++) {
       doc.text(rows[r][c], x + 3, y + 5, { width: colWidths[c] - 6, lineBreak: false });
@@ -373,7 +422,7 @@ function renderBullet(
 ): void {
   const bulletX = x - 10;
   const y = doc.y;
-  doc.font('Helvetica').fontSize(10).fillColor('#333333')
+  doc.font(fontRegular()).fontSize(10).fillColor('#333333')
     .text(bulletChar, bulletX, y, { width: 10, continued: false });
   doc.y = y; // reset y to same line
   renderRichText(doc, text, x, width, 10, '#333333');
@@ -414,7 +463,7 @@ function renderRichText(
 
   // Single plain segment — simple render
   if (segments.length === 1 && !segments[0].bold && !segments[0].italic) {
-    doc.font('Helvetica').fontSize(fontSize).fillColor(defaultColor)
+    doc.font(fontRegular()).fontSize(fontSize).fillColor(defaultColor)
       .text(segments[0].text, x, doc.y, { width, lineBreak: true });
     return;
   }
@@ -426,11 +475,11 @@ function renderRichText(
     const isLast = i === segments.length - 1;
 
     if (seg.bold) {
-      doc.font('Helvetica-Bold').fontSize(fontSize).fillColor('#2d3436');
+      doc.font(fontBold()).fontSize(fontSize).fillColor('#2d3436');
     } else if (seg.italic) {
-      doc.font('Helvetica-Oblique').fontSize(fontSize).fillColor('#636e72');
+      doc.font(fontItalic()).fontSize(fontSize).fillColor('#636e72');
     } else {
-      doc.font('Helvetica').fontSize(fontSize).fillColor(defaultColor);
+      doc.font(fontRegular()).fontSize(fontSize).fillColor(defaultColor);
     }
 
     if (i === 0) {
