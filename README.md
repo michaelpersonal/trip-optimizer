@@ -2,9 +2,27 @@
 
 If you love travel like I do, you know the pain: before every trip you're deep in Google, TripAdvisor, 小红书, 携程, reading strangers' tips, comparing restaurants, checking transit schedules. You easily spend days, sometimes weeks, on research. Travel is supposed to be leisure and relaxation, not a second job.
 
-**trip-optimizer** autonomously optimizes travel plans using Andrej Kaparthy's autoresearch pattern — an AI-powered CLI that researches, scores, and iteratively improves your itinerary.
+**trip-optimizer** autonomously optimizes travel plans using Andrej Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) pattern — an AI that researches, scores, and iteratively improves your itinerary.
 
 支持 **English** 和 **中文（简体中文）** -- 在初始化时选择语言，整个体验随之适配：提示语、生成的行程、研究搜索、评分系统全部使用您选择的语言。
+
+## Trip Optimizer Pro — ChatGPT Version (NEW)
+
+When I released the CLI, many friends were excited to try it — then hit the first step: `npm install`. "Do I need to download something?" "What's a terminal?" These are smart, well-traveled people who use ChatGPT every day. They just live outside the bubble where CLI tools and API keys are second nature.
+
+This is the AI diffusion problem: **95% of people outside the AI bubble have no idea what's going on in here.** They've never heard of Claude Code. They don't know what an "agent" is. The gap between what's possible and what's accessible is enormous.
+
+So I built a new interface. Same optimization engine — score, mutate, keep/revert — but wrapped in a ChatGPT conversation. No install. No API key. No terminal. You just talk to it.
+
+**Try it now:** ChatGPT > Explore GPTs > search **"Trip Optimizer Pro"**
+
+It asks you a few questions, generates a richly detailed plan, scores it honestly, then iteratively improves it. The plans are specific — named restaurants with signature dishes, sensory descriptions that make you want to book the flight, practical timing notes, not generic guidebook filler. Save your progress and come back across multiple sessions to keep optimizing.
+
+---
+
+## CLI Version
+
+Everything below is for the CLI version — for developers and power users who want full control, overnight batch runs, and 100+ optimization iterations.
 
 ## Install
 
