@@ -1,4 +1,6 @@
-# trip-optimizer
+# Trip Optimizer Pro
+
+![Trip Optimizer Pro](trip.png)
 
 If you love travel like I do, you know the pain: before every trip you're deep in Google, TripAdvisor, 小红书, 携程, reading strangers' tips, comparing restaurants, checking transit schedules. You easily spend days, sometimes weeks, on research. Travel is supposed to be leisure and relaxation, not a second job.
 
