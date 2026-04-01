@@ -20,3 +20,7 @@ export function getTripHistoryPath(): string {
 export function getLearnedPath(): string {
   return path.join(getGlobalDir(), 'learned.json');
 }
+
+export function getRegistryPath(): string {
+  return path.join(getGlobalDir(), 'trips.json');
+}
