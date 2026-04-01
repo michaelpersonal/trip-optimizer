@@ -17,6 +17,8 @@ import { rejectAction } from './commands/reject.js';
 import { applyAction } from './commands/apply.js';
 import { askAction } from './commands/ask.js';
 import { proposeAction } from './commands/propose.js';
+import { reoptimizeAction } from './commands/reoptimize.js';
+import { migrateAction } from './commands/migrate.js';
 import { loadConfig } from './data/config.js';
 import { setLanguage } from './i18n.js';
 
@@ -160,6 +162,25 @@ program
   .option('--lang <code>', 'Language (en|zh)')
   .option('--json', 'JSON output')
   .action((options) => proposeAction(options));
+
+program
+  .command('reoptimize')
+  .description('Re-optimize a scoped portion of the trip plan')
+  .option('--trip <id>', 'Trip ID')
+  .requiredOption('--scope <scope>', 'Scope (day:N, city:name, period:name, segment:id)')
+  .requiredOption('--goal <goal>', 'Optimization goal')
+  .option('--lang <code>', 'Language (en|zh)')
+  .option('--json', 'JSON output')
+  .action((options) => reoptimizeAction(options));
+
+program
+  .command('migrate <path>')
+  .description('Migrate an existing plan.md to structured plan.json')
+  .option('--id <id>', 'Custom trip ID')
+  .option('--dry-run', 'Parse only, do not write')
+  .option('--json', 'JSON output')
+  .option('--verbose', 'Show progress')
+  .action((tripPath, options) => migrateAction(tripPath, options));
 
 // Global error handler — catch unhandled LLM / provider errors
 process.on('unhandledRejection', (err) => {
