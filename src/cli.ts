@@ -14,6 +14,7 @@ import { planCommand } from './commands/plan.js';
 import { tripListAction, tripShowAction, tripSetDefaultAction } from './commands/trip.js';
 import { proposalsAction } from './commands/proposals.js';
 import { rejectAction } from './commands/reject.js';
+import { applyAction } from './commands/apply.js';
 import { loadConfig } from './data/config.js';
 import { setLanguage } from './i18n.js';
 
@@ -129,6 +130,15 @@ program
   .requiredOption('--proposal <id>', 'Proposal ID')
   .option('--json', 'JSON output')
   .action((options) => rejectAction(options));
+
+program
+  .command('apply')
+  .description('Apply a pending proposal')
+  .option('--trip <id>', 'Trip ID')
+  .requiredOption('--proposal <id>', 'Proposal ID')
+  .option('--approved-by <name>', 'Who approved')
+  .option('--json', 'JSON output')
+  .action((options) => applyAction(options));
 
 // Global error handler — catch unhandled LLM / provider errors
 process.on('unhandledRejection', (err) => {
