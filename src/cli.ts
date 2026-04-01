@@ -16,6 +16,7 @@ import { proposalsAction } from './commands/proposals.js';
 import { rejectAction } from './commands/reject.js';
 import { applyAction } from './commands/apply.js';
 import { askAction } from './commands/ask.js';
+import { proposeAction } from './commands/propose.js';
 import { loadConfig } from './data/config.js';
 import { setLanguage } from './i18n.js';
 
@@ -149,6 +150,16 @@ program
   .option('--lang <code>', 'Response language (en|zh)')
   .option('--json', 'JSON output')
   .action((options) => askAction(options));
+
+program
+  .command('propose')
+  .description('Propose a change to the trip plan')
+  .option('--trip <id>', 'Trip ID')
+  .requiredOption('--request <text>', 'Change request in natural language')
+  .option('--requested-by <name>', 'Who requested the change')
+  .option('--lang <code>', 'Language (en|zh)')
+  .option('--json', 'JSON output')
+  .action((options) => proposeAction(options));
 
 // Global error handler — catch unhandled LLM / provider errors
 process.on('unhandledRejection', (err) => {
