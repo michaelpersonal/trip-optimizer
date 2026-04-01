@@ -11,6 +11,7 @@ import { historyCommand } from './commands/history.js';
 import { dashboardCommand } from './commands/dashboard.js';
 import { chartCommand } from './commands/chart.js';
 import { planCommand } from './commands/plan.js';
+import { tripListAction, tripShowAction, tripSetDefaultAction } from './commands/trip.js';
 import { loadConfig } from './data/config.js';
 import { setLanguage } from './i18n.js';
 
@@ -91,6 +92,25 @@ program
   .option('--pdf', 'Generate a PDF document')
   .option('-o, --output <path>', 'Output path for PDF')
   .action(planCommand);
+
+const tripCmd = program.command('trip').description('Manage trips');
+
+tripCmd.command('list')
+  .description('List registered trips')
+  .option('--json', 'JSON output')
+  .action((options) => tripListAction(options));
+
+tripCmd.command('show')
+  .description('Show trip plan')
+  .option('--trip <id>', 'Trip ID')
+  .option('--day <n>', 'Show specific day', parseInt)
+  .option('--lang <code>', 'Language (en|zh)')
+  .option('--json', 'JSON output')
+  .action((options) => tripShowAction(options));
+
+tripCmd.command('set-default <id>')
+  .description('Set default trip')
+  .action((id) => tripSetDefaultAction(id));
 
 // Global error handler — catch unhandled LLM / provider errors
 process.on('unhandledRejection', (err) => {
