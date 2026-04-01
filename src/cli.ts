@@ -12,6 +12,8 @@ import { dashboardCommand } from './commands/dashboard.js';
 import { chartCommand } from './commands/chart.js';
 import { planCommand } from './commands/plan.js';
 import { tripListAction, tripShowAction, tripSetDefaultAction } from './commands/trip.js';
+import { proposalsAction } from './commands/proposals.js';
+import { rejectAction } from './commands/reject.js';
 import { loadConfig } from './data/config.js';
 import { setLanguage } from './i18n.js';
 
@@ -111,6 +113,22 @@ tripCmd.command('show')
 tripCmd.command('set-default <id>')
   .description('Set default trip')
   .action((id) => tripSetDefaultAction(id));
+
+program
+  .command('proposals')
+  .description('List proposals for a trip')
+  .option('--trip <id>', 'Trip ID')
+  .option('--status <status>', 'Filter by status (pending|applied|rejected)')
+  .option('--json', 'JSON output')
+  .action((options) => proposalsAction(options));
+
+program
+  .command('reject')
+  .description('Reject a pending proposal')
+  .option('--trip <id>', 'Trip ID')
+  .requiredOption('--proposal <id>', 'Proposal ID')
+  .option('--json', 'JSON output')
+  .action((options) => rejectAction(options));
 
 // Global error handler — catch unhandled LLM / provider errors
 process.on('unhandledRejection', (err) => {
