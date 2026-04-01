@@ -98,6 +98,7 @@ program
   .description('Pretty-print the current travel plan')
   .option('--pdf', 'Generate a PDF document')
   .option('-o, --output <path>', 'Output path for PDF')
+  .option('--json', 'JSON output')
   .action(planCommand);
 
 const tripCmd = program.command('trip').description('Manage trips');

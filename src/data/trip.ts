@@ -25,6 +25,7 @@ export async function scaffoldTrip(tripDir: string, files: TripFiles): Promise<v
   fs.writeFileSync(path.join(tripDir, 'program.md'), files.program);
   fs.writeFileSync(path.join(tripDir, 'activities_db.json'), '{}');
   fs.writeFileSync(path.join(tripDir, '.gitignore'), GITIGNORE);
+  fs.mkdirSync(path.join(tripDir, 'proposals'), { recursive: true });
 
   // Initialize git and commit
   const git = simpleGit(tripDir);

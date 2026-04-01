@@ -8,6 +8,7 @@ import { loadConfig, saveConfig } from '../data/config.js';
 import { loadProfile, saveProfile, type Profile } from '../data/profile.js';
 import { getLearnedPath } from '../data/paths.js';
 import { scaffoldTrip } from '../data/trip.js';
+import { registerTrip } from '../data/registry.js';
 import { createProvider } from '../llm/factory.js';
 import { generateConstraints, type InitAnswers } from '../generators/constraints.js';
 import { generateRubrics } from '../generators/rubrics.js';
@@ -537,6 +538,13 @@ export async function initCommand(name: string): Promise<void> {
     program: programMd,
   });
   spinner.succeed(`${t('progress.project_created')} ${chalk.bold(tripDirName)}/`);
+
+  // Register in global trip registry
+  try {
+    registerTrip(tripDirName, tripDir, constraints.trip.name);
+  } catch {
+    // Non-fatal: registry registration can be done manually with migrate
+  }
 
   console.log(`
   ${chalk.green(t('next.title'))}

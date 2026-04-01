@@ -51,6 +51,17 @@ describe('scaffoldTrip', () => {
     expect(fs.existsSync(path.join(tripDir, '.git'))).toBe(true);
   });
 
+  it('creates proposals directory', async () => {
+    const tripDir = path.join(testDir, 'japan-2027');
+    await scaffoldTrip(tripDir, {
+      constraints: 'trip:\n  name: test',
+      rubrics: 'dimensions: {}',
+      plan: '# Day 1',
+      program: '# Instructions',
+    });
+    expect(fs.existsSync(path.join(tripDir, 'proposals'))).toBe(true);
+  });
+
   it('writes correct file contents', async () => {
     const tripDir = path.join(testDir, 'japan-2027');
     await scaffoldTrip(tripDir, {

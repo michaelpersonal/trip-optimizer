@@ -38,6 +38,7 @@ async function ensureCJKFont(): Promise<string> {
 interface PlanOptions {
   pdf?: boolean;
   output?: string;
+  json?: boolean;
 }
 
 interface Frontmatter {
@@ -62,6 +63,20 @@ export async function planCommand(options: PlanOptions = {}): Promise<void> {
   }
 
   const content = fs.readFileSync(planPath, 'utf-8');
+
+  if (options.json) {
+    const planJsonPath = path.join(cwd, 'plan.json');
+    if (fs.existsSync(planJsonPath)) {
+      const { success } = await import('../cli-utils/json-output.js');
+      const plan = JSON.parse(fs.readFileSync(planJsonPath, 'utf-8'));
+      success('plan', null, plan);
+      return;
+    }
+    // Fallback to markdown content
+    const { success } = await import('../cli-utils/json-output.js');
+    success('plan', null, { markdown: content });
+    return;
+  }
 
   if (options.pdf) {
     const outputPath = options.output || path.join(cwd, 'plan.pdf');
