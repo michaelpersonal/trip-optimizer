@@ -27,7 +27,6 @@ export class VertexProvider implements LLMProvider {
   async complete(prompt: string, maxTokens: number): Promise<string> {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        // Use streaming to avoid timeout errors with large max_tokens
         const stream = this.client.messages.stream({
           model: this.model,
           max_tokens: maxTokens,
