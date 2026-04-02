@@ -52,6 +52,8 @@ trip-optimizer plan --pdf        # generate a formatted PDF itinerary
 
 ## Commands
 
+### Core
+
 | Command | Description |
 |---------|-------------|
 | `init <name>` | Create a new trip project |
@@ -66,9 +68,31 @@ trip-optimizer plan --pdf        # generate a formatted PDF itinerary
 | `dashboard` | Live optimization dashboard |
 | `chart` | ASCII score chart |
 | `plan` | Pretty-print travel plan |
+| `plan --json` | Output structured plan data |
 | `plan --pdf` | Generate a PDF document |
 | `debrief` | Post-trip feedback |
 | `history` | View past trips |
+
+### Agent CLI
+
+Commands designed for programmatic use by AI agents (e.g. via [OpenClaw](https://github.com/openclaw/openclaw) iMessage integration). All support `--json` for structured output with error codes and actionable hints.
+
+| Command | Description |
+|---------|-------------|
+| `trip list` | List registered trips |
+| `trip show --trip <id>` | Show trip plan (use `--day N` to filter) |
+| `trip set-default --trip <id>` | Set the default trip |
+| `ask --trip <id> --question <q>` | Ask a natural-language question about the plan |
+| `propose --trip <id> --request <text>` | Propose a plan change (returns proposal for review) |
+| `proposals --trip <id>` | List proposals (use `--status` to filter) |
+| `apply --trip <id> --proposal <id>` | Apply a pending proposal (conflict detection via version ID) |
+| `reject --trip <id> --proposal <id>` | Reject a proposal |
+| `reoptimize --trip <id> --scope <s>` | Re-optimize a scoped portion (e.g. `day:3`, `city:Tokyo`) |
+| `migrate <path>` | Convert an existing plan.md to structured plan.json |
+
+**Proposal lifecycle:** `propose` generates a candidate plan and saves it as a pending proposal. Use `proposals` to inspect, then `apply` or `reject`. Applied changes bump the plan version; conflicts are detected automatically if the base version has changed.
+
+**Trip registry:** Trips are registered globally in `~/.trip-optimizer/trips.json`. Use `--trip <id>` to target a specific trip, or set a default with `trip set-default`.
 
 ## How It Works
 
